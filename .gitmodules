@@ -1,0 +1,6 @@
+[submodule "dependencies/glm"]
+	path = dependencies/glm
+	url = git@github.com:g-truc/glm.git
+[submodule "dependencies/entt"]
+	path = dependencies/entt
+	url = git@github.com:skypjack/entt.git
