@@ -1,16 +1,29 @@
 #pragma once
 
-#include <string>
+#include "filesystem/managers.hpp"
+
+#include <filesystem>
 
 namespace simp {
 
   struct LaunchSettings {
     int argCallback(const std::string* arr, int size);
-    std::string omsiDir;
+    std::filesystem::path omsiDir;
   };
 
   struct Simp {
-    void run(const LaunchSettings& settings);
+  public:
+    Simp(const LaunchSettings& settings);
+    ~Simp();
+    void run();
+  public:
+    const static MeshManager& GetMeshManager();
+    const static TextureManager& GetTextureManager();
+  private:
+    MeshManager MeshManager;
+    TextureManager TextureManager;
+  private:
+    static const Simp* Instance;
   };
 
 }

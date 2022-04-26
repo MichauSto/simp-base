@@ -15,6 +15,7 @@ add_subdirectory(assimp)
 file(GLOB_RECURSE src source/*.hpp source/*.cpp)
 
 add_library(simp_aimesh SHARED ${src})
+set_property(TARGET simp_aimesh PROPERTY CXX_STANDARD 20)
 target_link_libraries(simp_aimesh PUBLIC assimp simp_api glm)
 
 add_custom_command(TARGET simp_aimesh POST_BUILD

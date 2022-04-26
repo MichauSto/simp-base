@@ -21,7 +21,7 @@ AiLoader::AiLoader(const char* omsiDir)
     0xffff);
 }
 
-PMeshInstance __stdcall AiLoader::LoadMesh(uint64_t size, const char* data, const char* filename) const
+PMeshInstance AiLoader::LoadMesh(uint64_t size, const char* data, const char* filename) const
 {
   auto scene = Importer->ReadFileFromMemory(data, size,
     aiProcessPreset_TargetRealtime_MaxQuality |
@@ -31,7 +31,7 @@ PMeshInstance __stdcall AiLoader::LoadMesh(uint64_t size, const char* data, cons
   return new AiMesh(this, scene);
 }
 
-void __stdcall AiLoader::FreeMesh(PMeshInstance instance) const
+void AiLoader::FreeMesh(PMeshInstance instance) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);
@@ -40,7 +40,7 @@ void __stdcall AiLoader::FreeMesh(PMeshInstance instance) const
   Importer->FreeScene();
 }
 
-uint32_t __stdcall AiLoader::GetMaterialCount(PMeshInstance instance) const
+uint32_t AiLoader::GetMaterialCount(PMeshInstance instance) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);
@@ -48,7 +48,7 @@ uint32_t __stdcall AiLoader::GetMaterialCount(PMeshInstance instance) const
   return mesh->Scene->mNumMaterials;
 }
 
-const char* __stdcall AiLoader::GetMaterialName(PMeshInstance instance, uint32_t materialId) const
+const char* AiLoader::GetMaterialName(PMeshInstance instance, uint32_t materialId) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);
@@ -56,7 +56,15 @@ const char* __stdcall AiLoader::GetMaterialName(PMeshInstance instance, uint32_t
   return mesh->MatNames[materialId].C_Str();
 }
 
-void __stdcall AiLoader::GetMaterialParams(PMeshInstance instance, uint32_t materialId, float diffuse[], float ambient[], float specular[], float emit[], float& specularExp, float& alpha) const
+void AiLoader::GetMaterialParams(
+  PMeshInstance instance, 
+  uint32_t materialId, 
+  float diffuse[], 
+  float ambient[], 
+  float specular[], 
+  float emit[], 
+  float& shininess, 
+  float& alpha) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);
@@ -66,63 +74,58 @@ void __stdcall AiLoader::GetMaterialParams(PMeshInstance instance, uint32_t mate
   material->Get<aiColor3D>(AI_MATKEY_COLOR_AMBIENT, *(aiColor3D*)ambient);
   material->Get<aiColor3D>(AI_MATKEY_COLOR_SPECULAR, *(aiColor3D*)specular);
   material->Get<aiColor3D>(AI_MATKEY_COLOR_EMISSIVE, *(aiColor3D*)emit);
-  material->Get<float>(AI_MATKEY_SHININESS, specularExp);
+  material->Get<float>(AI_MATKEY_SHININESS, shininess);
   material->Get<float>(AI_MATKEY_OPACITY, alpha);
 
 }
 
-uint32_t __stdcall AiLoader::GetTriangleCount(PMeshInstance instance, uint32_t materialId) const
+uint32_t AiLoader::GetTriangleCount(PMeshInstance instance, uint32_t materialId) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);
   return uint32_t();
 }
 
-void __stdcall AiLoader::GetVertexPosition(PMeshInstance instance, uint32_t materialId, uint32_t triangleId, uint32_t vertexId, float position[]) const
+void AiLoader::GetVertex(
+  PMeshInstance instance, 
+  uint32_t materialId,
+  uint32_t triangleId, 
+  uint32_t vertexId, 
+  float position[], 
+  float normal[], 
+  float texcoord[]) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);
 }
 
-void __stdcall AiLoader::GetVertexNormal(PMeshInstance instance, uint32_t materialId, uint32_t triangleId, uint32_t vertexId, float normal[]) const
+void AiLoader::GetVertexWeights(
+  PMeshInstance instance, 
+  uint32_t materialId, 
+  uint32_t triangleId, 
+  uint32_t vertexId, 
+  uint32_t bones[], 
+  float weights[]) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);
 }
 
-void __stdcall AiLoader::GetVertexTexCoord(PMeshInstance instance, uint32_t materialId, uint32_t triangleId, uint32_t vertexId, float texCoord[]) const
-{
-  auto mesh = static_cast<AiMesh*>(instance);
-  assert(mesh);
-}
-
-void __stdcall AiLoader::GetVertexIndices(PMeshInstance instance, uint32_t materialId, uint32_t triangleId, uint32_t vertexId, uint32_t bones[]) const
-{
-  auto mesh = static_cast<AiMesh*>(instance);
-  assert(mesh);
-}
-
-void __stdcall AiLoader::GetVertexWeights(PMeshInstance instance, uint32_t materialId, uint32_t triangleId, uint32_t vertexId, float weights[]) const
-{
-  auto mesh = static_cast<AiMesh*>(instance);
-  assert(mesh);
-}
-
-uint32_t __stdcall AiLoader::GetBoneCount(PMeshInstance instance) const
+uint32_t AiLoader::GetBoneCount(PMeshInstance instance) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);
   return uint32_t();
 }
 
-const char* __stdcall AiLoader::GetBoneName(PMeshInstance instance, uint32_t boneId) const
+const char* AiLoader::GetBoneName(PMeshInstance instance, uint32_t boneId) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);
   return nullptr;
 }
 
-void __stdcall AiLoader::GetOriginTransform(PMeshInstance instance, float matrix[]) const
+void AiLoader::GetOriginTransform(PMeshInstance instance, float matrix[]) const
 {
   auto mesh = static_cast<AiMesh*>(instance);
   assert(mesh);

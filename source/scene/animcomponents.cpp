@@ -14,7 +14,7 @@ namespace simp {
     {
       auto view = Registry.view<AnimComponent>();
       for (const auto& entity : view) {
-        auto& [anim] = view.get<>(entity);
+        auto [anim] = view.get<>(entity);
         const auto& source = Registry.get<ScriptComponent>(anim.VarSource);
         anim.PrevVar = std::exchange(
           anim.Var,
@@ -28,7 +28,7 @@ namespace simp {
         AnimComponent,
         AnimDelayComponent>();
       for (const auto& entity : view) {
-        auto& [anim, delay] = view.get<>(entity);
+        auto [anim, delay] = view.get<>(entity);
         anim.Var = anim.PrevVar + (anim.Var - anim.PrevVar) * delay.Delay * dt;
       }
     }
@@ -39,7 +39,7 @@ namespace simp {
         AnimComponent,
         AnimSpeedComponent>();
       for (const auto& entity : view) {
-        auto& [anim, speed] = view.get<>(entity);
+        auto [anim, speed] = view.get<>(entity);
         anim.Var = glm::clamp(
           anim.Var,
           anim.PrevVar - speed.MaxSpeed * dt,
@@ -52,7 +52,7 @@ namespace simp {
       auto view = Registry.view<AnimComponent>();
       // TODO After LOD system is implemented, omit syncing animations outside view range
       for (const auto& entity : view) {
-        auto& [anim] = view.get<>(entity);
+        auto [anim] = view.get<>(entity);
         if (anim.Var != anim.CachedVar) {
           anim.CachedVar = anim.Var;
           Registry.emplace_or_replace<AnimDirtyComponent>(entity);
@@ -69,7 +69,7 @@ namespace simp {
         AnimDirtyComponent,
         AnimTransComponent>();
       for (const auto& entity : view) {
-        auto& [anim, transform, dirty, trans] = view.get<>(entity);
+        auto [anim, transform, dirty, trans] = view.get<>(entity);
         transform.LocalTransform =
           anim.WorldMatrix *
           glm::translate(glm::vec3{ anim.Var * anim.Factor + anim.Offset, 0.f, 0.f });
@@ -85,7 +85,7 @@ namespace simp {
         AnimDirtyComponent,
         AnimRotComponent>();
       for (const auto& entity : view) {
-        auto& [anim, transform, dirty, rot] = view.get<>(entity);
+        auto [anim, transform, dirty, rot] = view.get<>(entity);
         transform.LocalTransform =
           anim.WorldMatrix *
           glm::eulerAngleX(anim.Var * glm::radians(anim.Factor) + glm::radians(anim.Offset)) *

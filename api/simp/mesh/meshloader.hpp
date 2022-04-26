@@ -27,40 +27,25 @@ namespace simp {
         float ambient[],
         float specular[],
         float emit[],
-        float& specularExp,
+        float& shininess,
         float& alpha) const = 0;
       virtual uint32_t __stdcall GetTriangleCount(
         PMeshInstance instance, 
         uint32_t materialId) const = 0;
-      virtual void __stdcall GetVertexPosition(
+      virtual void __stdcall GetVertex(
         PMeshInstance instance,
         uint32_t materialId,
         uint32_t triangleId,
         uint32_t vertexId,
-        float position[]) const = 0;
-      virtual void __stdcall GetVertexNormal(
-        PMeshInstance instance,
-        uint32_t materialId,
-        uint32_t triangleId,
-        uint32_t vertexId,
-        float normal[]) const = 0;
-      virtual void __stdcall GetVertexTexCoord(
-        PMeshInstance instance,
-        uint32_t materialId,
-        uint32_t triangleId,
-        uint32_t vertexId,
+        float position[],
+        float normal[],
         float texCoord[]) const = 0;
-      virtual void __stdcall GetVertexIndices(
-        PMeshInstance instance,
-        uint32_t materialId,
-        uint32_t triangleId,
-        uint32_t vertexId,
-        uint32_t bones[]) const = 0;
       virtual void __stdcall GetVertexWeights(
         PMeshInstance instance,
         uint32_t materialId,
         uint32_t triangleId,
         uint32_t vertexId,
+        uint32_t bones[],
         float weights[]) const = 0;
       virtual uint32_t __stdcall GetBoneCount(
         PMeshInstance instance) const = 0;

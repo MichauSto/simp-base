@@ -6,30 +6,35 @@
 #include <string>
 #include <vector>
 
-struct O3dMaterial {
-  glm::vec3 Diffuse;
-  float Alpha;
-  glm::vec3 Emissive;
-  glm::vec3 Specular;
-  float SpecularExp;
-  std::string Name;
-};
-
-struct O3dVertex {
+struct Vertex {
   glm::vec3 Position;
   glm::vec3 Normal;
   glm::vec2 TexCoord;
 };
 
-struct O3dSubMesh {
-  O3dMaterial Material;
+struct VertexWeights {
+  glm::u32vec4 Indices;
+  glm::vec4 Weights;
+};
+
+struct SubMesh {
+  struct {
+    glm::vec3 Diffuse;
+    float Alpha;
+    glm::vec3 Specular;
+    glm::vec3 Emissive;
+    float Shininess;
+  } Material;
+  std::string Name;
   std::vector<uint16_t> Indices;
 };
 
-struct O3dMesh {
-  std::vector<O3dVertex> Vertices;
-  std::vector<O3dSubMesh> Models;
+struct Mesh {
+  std::vector<Vertex> Vertices;
+  std::vector<VertexWeights> Weights;
+  std::vector<SubMesh> Models;
   glm::mat4 Origin;
+  std::vector<std::string> Bones;
 };
 
 struct O3dLoader : public simp::MeshLoaderApi::IMeshLoader {
@@ -54,47 +59,32 @@ struct O3dLoader : public simp::MeshLoaderApi::IMeshLoader {
     float ambient[],
     float specular[],
     float emit[],
-    float& specularExp,
+    float& shininess,
     float& alpha) const override;
   uint32_t __stdcall GetTriangleCount(
     simp::MeshLoaderApi::PMeshInstance instance, 
     uint32_t materialId) const override;
-  void __stdcall GetVertexPosition(
+  void __stdcall GetVertex(
     simp::MeshLoaderApi::PMeshInstance instance,
     uint32_t materialId,
     uint32_t triangleId,
     uint32_t vertexId,
-    float position[]) const override;
-  void __stdcall GetVertexNormal(
-    simp::MeshLoaderApi::PMeshInstance instance,
-    uint32_t materialId,
-    uint32_t triangleId,
-    uint32_t vertexId,
-    float normal[]) const override;
-  void __stdcall GetVertexTexCoord(
-    simp::MeshLoaderApi::PMeshInstance instance,
-    uint32_t materialId,
-    uint32_t triangleId,
-    uint32_t vertexId,
+    float position[],
+    float normal[],
     float texCoord[]) const override;
-  virtual void __stdcall GetVertexIndices(
-    simp::MeshLoaderApi::PMeshInstance instance, 
-    uint32_t materialId, 
-    uint32_t triangleId, 
-    uint32_t vertexId, 
-    uint32_t bones[]) const override;
-  virtual void __stdcall GetVertexWeights(
-    simp::MeshLoaderApi::PMeshInstance instance, 
-    uint32_t materialId, 
-    uint32_t triangleId, 
-    uint32_t vertexId, 
+  void __stdcall GetVertexWeights(
+    simp::MeshLoaderApi::PMeshInstance instance,
+    uint32_t materialId,
+    uint32_t triangleId,
+    uint32_t vertexId,
+    uint32_t bones[],
     float weights[]) const override;
-  virtual uint32_t __stdcall GetBoneCount(
+  uint32_t __stdcall GetBoneCount(
     simp::MeshLoaderApi::PMeshInstance instance) const override;
-  virtual const char* __stdcall GetBoneName(
+  const char* __stdcall GetBoneName(
     simp::MeshLoaderApi::PMeshInstance instance, 
     uint32_t boneId) const override;
-  virtual void __stdcall GetOriginTransform(
+  void __stdcall GetOriginTransform(
     simp::MeshLoaderApi::PMeshInstance instance, 
     float matrix[]) const override;
 

@@ -68,7 +68,7 @@ namespace simp {
   void Scene::UpdateReferenceTile() {
     auto view = Registry.view<TransformComponent, TransformWorldComponent>();
     for (const auto& entity : view) {
-      auto& [transform, world] = view.get<>(entity);
+      auto [transform, world] = view.get<>(entity);
       transform.WorldTransform = 
         glm::translate(
           glm::vec3(

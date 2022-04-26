@@ -3,8 +3,12 @@
 #include <Windows.h>
 #include <vector>
 #include <string>
+#include <memory>
+#include <filesystem>
 
 namespace simp {
+
+  struct Mesh;
 
   namespace MeshLoaderApi {
     struct IMeshLoader;
@@ -19,10 +23,10 @@ namespace simp {
 
   struct MeshLoader {
     std::vector<MeshLoaderImpl> Loaders;
-    MeshLoader(const std::string& omsiDir);
+    MeshLoader(const std::filesystem::path& omsiDir);
     void LoadImpl(const std::string& path, const std::string& omsiDir);
     ~MeshLoader();
-    void LoadMesh(const std::string& data, const std::string& path) const;
+    std::shared_ptr<Mesh> LoadMesh(const std::string& data, const std::string& path) const;
   };
 
 
