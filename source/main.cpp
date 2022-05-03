@@ -11,6 +11,9 @@
 #include <blueprints/modelblueprint.hpp>
 
 #include "simp.hpp"
+#include "core/event.hpp"
+#include "core/window.hpp"
+#include "core/winmsgtranslator.hpp"
 #include "filesystem/meshloader.hpp"
 
 #include "plugin/legacy.hpp"
@@ -65,6 +68,11 @@ int WINAPI wWinMain(
 int wmain(int argc, const wchar_t** argv)
 #endif
 {
+#ifdef _SIMP_WINAPP
+#define _SIMP_MAIN_ARGS lpCmdLine
+#else
+#define _SIMP_MAIN_ARGS argc, argv
+#endif
   using namespace simp;
 
   std::setlocale(LC_ALL, ".UTF8");
@@ -72,13 +80,14 @@ int wmain(int argc, const wchar_t** argv)
 
   LaunchSettings settings{};
 
-#ifdef _SIMP_WINAPP
-  parseArgs(lpCmdLine, std::bind(&LaunchSettings::argCallback, &settings, std::placeholders::_1, std::placeholders::_2));
-#else
-  parseArgs(argc, argv, std::bind(&LaunchSettings::argCallback, &settings, std::placeholders::_1, std::placeholders::_2));
-#endif
+  parseArgs(_SIMP_MAIN_ARGS, std::bind(&LaunchSettings::argCallback, &settings, std::placeholders::_1, std::placeholders::_2));
 
+  EventDispatcher dispatcher{};
+  WinMsgTranslator translator{};
+  Window window{};
   Simp simp{ settings };
+
+  //Window::setFullscreen(true);
 
   PluginManagerLegacy mgr(settings.omsiDir);
   
@@ -88,6 +97,8 @@ int wmain(int argc, const wchar_t** argv)
     "Vehicles/MAN_SD200/Texture",
     {},
     {});
+
+  simp.Run();
 
   CoUninitialize();
   return 0;

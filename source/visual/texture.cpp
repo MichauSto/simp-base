@@ -1,17 +1,17 @@
 #include "texture.hpp"
+#include "simp.hpp"
 
 namespace simp {
-
-  Texture::Texture() {
-    static int counter = 0;
-    s = counter++;
-  }
 
   Texture::Texture(const DirectX::ScratchImage& image)
   {
     auto metadata = image.GetMetadata();
-    return;
-    //DirectX::CreateShaderResourceView(Simp::GetGraphics().GetDevice(), image.GetImages(), image.GetImageCount(), image.GetMetadata(), )
+    DirectX::CreateShaderResourceView(
+      Simp::GetGraphics().GetDevice(), 
+      image.GetImages(), 
+      image.GetImageCount(), 
+      image.GetMetadata(), 
+      &TextureView);
   }
 
   std::shared_ptr<Texture> Texture::LoadDDS(const std::string& data)

@@ -10,9 +10,8 @@ namespace simp {
     static std::shared_ptr<Texture> LoadDDS(const std::string& data);
     static std::shared_ptr<Texture> LoadTGA(const std::string& data);
     static std::shared_ptr<Texture> LoadWIC(const std::string& data);
-    Texture();
     Texture(const DirectX::ScratchImage& image);
-    int s;
+    ComPtr<ID3D11ShaderResourceView> TextureView;
   };
 
 }

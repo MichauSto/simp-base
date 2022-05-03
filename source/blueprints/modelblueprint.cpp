@@ -1,10 +1,73 @@
 #include "modelblueprint.hpp"
 #include "simp.hpp"
 
+#include "scene/animcomponents.hpp"
+#include "scene/transformcomponents.hpp"
+
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
 namespace simp {
+
+  void ModelBlueprint::Instantiate(
+    Scene& scene, 
+    entt::entity mapObject,
+    entt::entity scriptObject) const
+  {
+    // Create entities for each animation node
+    std::vector<entt::entity> animNodes(Animations.size());
+    scene.GetRegistry().create(animNodes.begin(), animNodes.end());
+
+    // Assign animation components
+    for (int i = 0; i < animNodes.size(); ++i) {
+      const auto& bp = Animations[i];
+
+      // Local transform
+      scene.GetRegistry().emplace<TransformComponent>(
+        animNodes[i], 
+        glm::mat4{ 1.f });
+
+      // Transform parent
+      scene.GetRegistry().emplace<TransformParentComponent>(
+        animNodes[i], 
+        bp.Parent >= 0 ? animNodes[bp.Parent] : mapObject);
+
+      // Animation controller component
+      scene.GetRegistry().emplace<AnimComponent>(
+        animNodes[i],
+        bp.OffsetMatrix,
+        scriptObject,
+        bp.varIndex,
+        bp.Factor,
+        bp.Offset);
+
+      // Speed limit component (if set)
+      if (bp.MaxSpeed)
+        scene.GetRegistry().emplace<AnimSpeedComponent>(
+          animNodes[i],
+          bp.MaxSpeed);
+
+      // Delay component (if set)
+      if (bp.Delay)
+        scene.GetRegistry().emplace<AnimDelayComponent>(
+          animNodes[i],
+          bp.Delay);
+
+      // Animation type dummy
+      switch (bp.Mode) {
+      case AnimBlueprint::Trans:
+        scene.GetRegistry().emplace<AnimTransComponent>(animNodes[i]);
+        break;
+      case AnimBlueprint::Rot:
+        scene.GetRegistry().emplace<AnimRotComponent>(animNodes[i]);
+        break;
+      default:
+        // The model creator messed up really bad
+        // Some meaningful log message, I guess
+        break;
+      }
+    }
+  }
 
   ModelBlueprint::ModelBlueprint(
     const CfgFile& config, 

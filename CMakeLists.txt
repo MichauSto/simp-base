@@ -27,7 +27,7 @@ target_include_directories(simp_api INTERFACE api)
 project(simp)
 add_executable(simp ${src})
 set_property(TARGET simp PROPERTY CXX_STANDARD 20)
-target_link_libraries(simp PRIVATE simp_api simp_utils glm EnTT d3d12.lib dxgi.lib MikkTSpace DirectXTex simp_pluginhost_serverlib)
+target_link_libraries(simp PRIVATE simp_api simp_utils glm EnTT dwmapi.lib d3d12.lib dxgi.lib MikkTSpace DirectXTex simp_pluginhost_serverlib)
 target_include_directories(simp PRIVATE source)
 
 set_property(TARGET simp PROPERTY VS_DEBUGGER_COMMAND_ARGUMENTS "-OMSI \"${OMSI_DIR_DEBUG}\"")

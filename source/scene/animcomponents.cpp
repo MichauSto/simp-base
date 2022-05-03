@@ -15,7 +15,7 @@ namespace simp {
       auto view = Registry.view<AnimComponent>();
       for (const auto& entity : view) {
         auto [anim] = view.get<>(entity);
-        const auto& source = Registry.get<ScriptComponent>(anim.VarSource);
+        const auto& source = Registry.get<ScriptComponent>(anim.ScriptObject);
         anim.PrevVar = std::exchange(
           anim.Var,
           source.VarList[anim.VarIndex]);
@@ -98,5 +98,21 @@ namespace simp {
       Registry.clear<AnimDirtyComponent>();
     }
   }
+
+  AnimComponent::AnimComponent(
+    const glm::mat4& _worldMatrix, 
+    entt::entity _scriptObject, 
+    int _varIndex, 
+    float _factor, 
+    float _offset)
+    : WorldMatrix(_worldMatrix),
+    InverseWorldMatrix(glm::inverse(_worldMatrix)),
+    ScriptObject(_scriptObject),
+    VarIndex(_varIndex),
+    Factor(_factor),
+    Offset(_offset)
+  {
+  }
+
 
 }

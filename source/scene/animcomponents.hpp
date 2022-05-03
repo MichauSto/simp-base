@@ -7,10 +7,16 @@
 namespace simp {
 
   struct AnimComponent {
+    AnimComponent(
+      const glm::mat4& _worldMatrix,
+      entt::entity _scriptObject,
+      int _varIndex,
+      float _factor,
+      float _offset);
     glm::mat4 WorldMatrix;
     glm::mat4 InverseWorldMatrix;
     // TODO consider replacing with raw pointer
-    entt::entity VarSource;
+    entt::entity ScriptObject;
     int VarIndex;
 
     float Factor;

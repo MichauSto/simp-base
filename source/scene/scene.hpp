@@ -14,6 +14,7 @@ namespace simp {
     void ClearTransformFlags();
     void UpdateReferenceTile();
     void Update(float dt);
+    entt::registry& GetRegistry();
   private:
     entt::registry Registry;
     glm::vec2 TileSize;

@@ -1,8 +1,11 @@
 #pragma once
 
 #include "filesystem/managers.hpp"
+#include "core/graphics.hpp"
+#include "core/event.hpp"
 
 #include <filesystem>
+#include <entt/entt.hpp>
 
 namespace simp {
 
@@ -15,13 +18,18 @@ namespace simp {
   public:
     Simp(const LaunchSettings& settings);
     ~Simp();
-    void run();
+    void Run();
   public:
     const static MeshManager& GetMeshManager();
     const static TextureManager& GetTextureManager();
+    const static Graphics& GetGraphics();
   private:
+    void OnClose(const WindowCloseEvent& e);
+    bool Running = true;
+    entt::dispatcher Dispatcher;
     MeshManager MeshManager;
     TextureManager TextureManager;
+    Graphics Graphics;
   private:
     static const Simp* Instance;
   };

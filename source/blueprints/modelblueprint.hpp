@@ -5,6 +5,8 @@
 #include "filesystem/cfgfile.hpp"
 #include "utils/dict.hpp"
 
+#include "scene/scene.hpp"
+
 #include <memory>
 #include <vector>
 #include <filesystem>
@@ -51,6 +53,8 @@ namespace simp {
   };
 
   struct ModelBlueprint {
+
+    void Instantiate(Scene& scene, entt::entity mapObject, entt::entity scriptObject) const;
 
     ModelBlueprint(
       const CfgFile& config,

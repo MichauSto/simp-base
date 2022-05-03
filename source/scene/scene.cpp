@@ -25,4 +25,9 @@ namespace simp {
     ClearTransformFlags();
   }
 
+  entt::registry& Scene::GetRegistry()
+  {
+    return Registry;
+  }
+
 }
