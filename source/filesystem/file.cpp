@@ -44,6 +44,7 @@ namespace simp {
 
   std::string LoadFileBinary(const std::filesystem::path& path)
   {
+    if (!std::filesystem::exists(path)) return {};
     std::ifstream ifs(path, std::ios::ate | std::ios::binary);
     std::string buf(ifs.tellg(), ' ');
     ifs.seekg(0);

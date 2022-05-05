@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
+set(OMSI_DIR_DEBUG "C:/Program Files (x86)/Steam/steamapps/common/OMSI 2" CACHE STRING "OMSI 2 Directory for Visual Studio debug sessions")
+set(PLUGINHOST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../simp-pluginhost" CACHE STRING "Location of the legacy plugin host project")
+
 set(BUILD_SHARED_LIBS off)
 
 add_subdirectory(dependencies/glm)
@@ -9,9 +12,8 @@ add_subdirectory(dependencies/MikkTSpace)
 add_subdirectory(dependencies/DirectXTex)
 
 add_subdirectory(utils)
-add_subdirectory(../simp_pluginhost/api simp_pluginhost_api)
+add_subdirectory(${PLUGINHOST_DIR}/api simp_pluginhost_api)
 
-set(OMSI_DIR_DEBUG "C:/Program Files (x86)/Steam/steamapps/common/OMSI 2" CACHE STRING "OMSI 2 Directory for Visual Studio debug sessions")
 
 file(GLOB_RECURSE src source/*.cpp source/*.hpp)
 file(GLOB_RECURSE api api/*.hpp)
@@ -37,7 +39,9 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT s
 add_subdirectory(plugins/o3d)
 add_subdirectory(plugins/aimesh)
 
+add_dependencies(simp simp_o3d simp_aimesh)
+
 add_custom_command(TARGET simp POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
-  ${CMAKE_CURRENT_SOURCE_DIR}/../simp_pluginhost/Host_$<CONFIG>/simp_pluginhost.exe
+  ${PLUGINHOST_DIR}/Host_$<CONFIG>/simp_pluginhost.exe
   $<TARGET_FILE_DIR:simp>/simp_pluginhost.exe)
