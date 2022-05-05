@@ -110,7 +110,10 @@ namespace simp {
     ScriptObject(_scriptObject),
     VarIndex(_varIndex),
     Factor(_factor),
-    Offset(_offset)
+    Offset(_offset),
+    CachedVar(0.f),
+    PrevVar(0.f),
+    Var(0.f)
   {
   }
 

@@ -3,9 +3,9 @@
 #include "filesystem/managers.hpp"
 #include "core/graphics.hpp"
 #include "core/event.hpp"
+#include "scene/scene.hpp"
 
 #include <filesystem>
-#include <entt/entt.hpp>
 
 namespace simp {
 
@@ -23,6 +23,7 @@ namespace simp {
     const static MeshManager& GetMeshManager();
     const static TextureManager& GetTextureManager();
     const static Graphics& GetGraphics();
+    static Scene& GetScene();
   private:
     void OnClose(const WindowCloseEvent& e);
     bool Running = true;
@@ -30,6 +31,7 @@ namespace simp {
     MeshManager MeshManager;
     TextureManager TextureManager;
     Graphics Graphics;
+    mutable Scene Scene;
   private:
     static const Simp* Instance;
   };

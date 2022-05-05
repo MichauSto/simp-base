@@ -34,7 +34,9 @@ namespace simp {
     while (Running) {
       EventDispatcher::Get().update();
 
-      float f = Window::getRefreshInterval();
+      float dt = Window::getRefreshInterval();
+
+      Scene.Update(dt);
 
       auto context = Graphics.GetDeviceContext();
       
@@ -66,6 +68,12 @@ namespace simp {
   {
     assert(Instance);
     return Instance->Graphics;
+  }
+
+  Scene& Simp::GetScene()
+  {
+    assert(Instance);
+    return Instance->Scene;
   }
 
   void Simp::OnClose(const WindowCloseEvent& e)

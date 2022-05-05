@@ -10,11 +10,11 @@ namespace simp {
 
     // PostUpdateVehicles(dt);
 
+    UpdateTransformHierarchy();
+
     UpdateScripts(dt);
 
     UpdateAnimations(dt);
-
-    UpdateTransformHierarchy();
 
     UpdateTransforms();
 

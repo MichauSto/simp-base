@@ -5,6 +5,12 @@
 
 namespace simp {
 
+  void Scene::OnTransformAdded(entt::registry& registry, entt::entity entity)
+  {
+    TransformHierarchyChanged = true;
+    Registry.emplace<TransformDirtyComponent>(entity);
+  }
+
   void Scene::UpdateTransformHierarchy()
   {
     // Check whether there is a need for updating

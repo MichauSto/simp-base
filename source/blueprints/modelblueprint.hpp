@@ -56,6 +56,7 @@ namespace simp {
 
     void Instantiate(Scene& scene, entt::entity mapObject, entt::entity scriptObject) const;
 
+    ModelBlueprint() = default;
     ModelBlueprint(
       const CfgFile& config,
       const std::filesystem::path& meshPath,
