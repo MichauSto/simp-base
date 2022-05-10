@@ -32,6 +32,14 @@ namespace simp {
 
   std::shared_ptr<Texture> TextureManager::GetTextureLocal(const std::filesystem::path& path) const
   {
+    auto& cache = LocalCache[path.generic_string()];
+    auto ptr = cache.lock();
+    if (!ptr) cache = ptr = LoadTextureLocal(path);
+    return ptr;
+  }
+
+  std::shared_ptr<Texture> TextureManager::LoadTextureLocal(const std::filesystem::path& path) const
+  {
     auto systemPath = OmsiDir / path;
     if (!std::filesystem::is_regular_file(systemPath)) return nullptr;
 
@@ -39,13 +47,13 @@ namespace simp {
 
     if (path.extension() == ".tga") {
       // Tga loader only
-      auto result = Texture::LoadTGA(data);
-      return result;
+      return Texture::LoadTGA(data);
     }
 
     if (path.extension() == ".dds") {
       // Try load dds
       auto result = Texture::LoadDDS(data);
+      if (result) return result;
     }
 
     // Try WIC loader

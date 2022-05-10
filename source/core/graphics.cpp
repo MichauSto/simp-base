@@ -102,6 +102,11 @@ namespace simp {
     return DeferredContext.Get();
   }
 
+  ID3D11DeviceContext* Graphics::GetImmediateContext() const
+  {
+    return DeviceContext.Get();
+  }
+
   ID3D11RenderTargetView* Graphics::GetRenderTargetView() const
   {
     return MainRenderTarget.Get();

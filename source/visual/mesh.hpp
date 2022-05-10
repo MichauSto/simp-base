@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utils/Windows.hpp"
+
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
@@ -56,6 +58,8 @@ namespace simp {
     int getModelCount() const;
     int getBoneIndex(const std::string_view& name) const;
     int getModelIndex(const std::string_view& name, int rpi) const;
+    ComPtr<ID3D11Buffer> VertexBuffer;
+    ComPtr<ID3D11Buffer> IndexBuffer;
   };
 
 }

@@ -3,9 +3,11 @@
 
 #include "scene/animcomponents.hpp"
 #include "scene/transformcomponents.hpp"
+#include "scene/rendercomponents.hpp"
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <regex>
 
 namespace simp {
 
@@ -31,6 +33,9 @@ namespace simp {
       scene.GetRegistry().emplace<TransformParentComponent>(
         animNodes[i], 
         bp.Parent >= 0 ? animNodes[bp.Parent] : mapObject);
+
+      // Invalid controller binding -> node with no animation
+      if (bp.varIndex < 0) continue;
 
       // Animation controller component
       scene.GetRegistry().emplace<AnimComponent>(
@@ -67,15 +72,95 @@ namespace simp {
         break;
       }
     }
+
+    auto renderBox = scene.GetRegistry().create();
+
+    // Local transform
+    scene.GetRegistry().emplace<TransformComponent>(
+      renderBox,
+      glm::translate(.5f * (m_BoundsMax + m_BoundsMin)));
+
+    // Transform parent
+    scene.GetRegistry().emplace<TransformParentComponent>(
+      renderBox,
+      mapObject);
+
+    scene.GetRegistry().emplace<RenderBoxComponent>(renderBox, m_BoundsMax - m_BoundsMin);
+
+    uint32_t index = 0;
+    std::vector<entt::entity> nodes{};
+    for (const auto& mesh : Meshes) {
+      if (mesh.Materials.empty()) 
+        continue;
+      auto parent = mesh.Animation >= 0 ? animNodes[mesh.Animation] : mapObject;
+      nodes.resize(mesh.Materials.size());
+      scene.GetRegistry().create(nodes.begin(), nodes.end());
+      for (int i = 0; i < mesh.Materials.size(); ++i) {
+
+        // TODO skip materials with invalid texture
+        //if (!mesh.Materials[i].Default.T) continue;
+
+        mesh.Materials[i].Instantiate(
+          scene,
+          nodes[i],
+          scriptObject,
+          [&](int index) { return nullptr; },
+          [&](int index) { return nullptr; });
+
+        // Local transform
+        scene.GetRegistry().emplace<TransformComponent>(
+          nodes[i],
+          glm::mat4{ 1.f });
+
+        // Transform parent
+        scene.GetRegistry().emplace<TransformParentComponent>(
+          nodes[i],
+          parent);
+
+        // Render order component
+        scene.GetRegistry().emplace<RenderOrderComponent>(nodes[i], 4, 0.f, index++);
+
+        scene.GetRegistry().emplace<RenderDistanceComponent>(nodes[i], renderBox);
+
+        // Render component
+        scene.GetRegistry().emplace<RenderComponent>(
+          nodes[i], 
+          mesh.Mesh, 
+          i);
+
+        scene.GetRegistry().emplace<LodComponent>(
+          nodes[i],
+          renderBox,
+          Lods[mesh.Lod].MinSize,
+          Lods[mesh.Lod].MaxSize);
+
+        if (mesh.VisibleVarIndex >= 0) {
+          scene.GetRegistry().emplace<VisibleComponent>(
+            nodes[i],
+            scriptObject,
+            mesh.VisibleVarIndex,
+            mesh.VisibleCond);
+        }
+
+        if (mesh.Viewpoint) {
+          scene.GetRegistry().emplace<ViewpointComponent>(
+            nodes[i],
+            mesh.Viewpoint);
+        }
+      }
+    }
   }
 
   ModelBlueprint::ModelBlueprint(
     const CfgFile& config, 
     const std::filesystem::path& meshPath,
     const std::filesystem::path& texturePath,
-    const Dict<int>& varLookup,
-    const Dict<int>& stringVarLookup)
+    const std::function<int(std::string_view)>& varLookup,
+    const std::function<int(std::string_view)>& stringVarLookup)
   {
+    bool boundsDefined = false;
+    m_BoundsMax = glm::vec3{ -std::numeric_limits<float>::max() };
+    m_BoundsMin = glm::vec3{ std::numeric_limits<float>::max() };
     LodBlueprint* lodContext = nullptr;
     MeshBlueprint* meshContext = nullptr;
     AnimBlueprint* animContext = nullptr;
@@ -84,14 +169,25 @@ namespace simp {
     int* animParentId = nullptr;
     Dict<int> meshIdentLookup{};
     for (config.Reset(); !config.AtEnd(); config.SkipEmptyLines()) {
-      if (config.TestTag("[lod]")) {
+      if (config.TestTag("[VFDmaxmin]")) {
+        config.ReadFloats((float*)&m_BoundsMin, 3);
+        config.ReadFloats((float*)&m_BoundsMax, 3);
+        boundsDefined = true;
+      }
+      else if (config.TestTag("[lod]")) {
         auto size = config.ReadFloat();
-        if (Lods.size() && Lods.back().MinSize <= size) {
-          // Invalid LOD order
-          continue;
+        float maxSize = std::numeric_limits<float>::max();
+        if (Lods.size()) {
+          maxSize = Lods.back().MinSize;
+          if (maxSize <= size) {
+            // Invalid LOD order
+            continue;
+          }
         }
         lodContext = &Lods.emplace_back();
         lodContext->MinSize = size;
+        lodContext->MaxSize = maxSize;
+        
       }
       else if (config.TestTag("[mesh]")) {
         if (Lods.empty()) {
@@ -109,9 +205,21 @@ namespace simp {
         if (meshContext->Mesh) {
           meshContext->Materials.resize(meshContext->Mesh->getModelCount());
           for (int i = 0; i < meshContext->Materials.size(); ++i) {
+            const auto& model = meshContext->Mesh->getModel(i);
+            auto& item = meshContext->Materials[i].Default;
             // Load default material
-            meshContext->Materials[i].Default.DiffuseTexture = 
-              Simp::GetTextureManager().Get(texturePath / meshContext->Mesh->getModel(i).Name);
+            item.Textures[Material::Diffuse] =
+              MaterialBlueprint::ParseTexture(model.Name, texturePath);
+            item.Alpha = model.Alpha;
+            item.Diffuse = model.Diffuse;
+            item.Ambient = model.Ambient;
+            item.Emissive = model.Emissive;
+            item.Specular = model.Specular;
+            item.Shininess = model.Shininess;
+          }
+          if (!boundsDefined) {
+            m_BoundsMin = glm::min(m_BoundsMin, meshContext->Mesh->BoundsMin);
+            m_BoundsMax = glm::max(m_BoundsMax, meshContext->Mesh->BoundsMax);
           }
         }
         animParentId = &meshContext->Animation;
@@ -121,9 +229,7 @@ namespace simp {
           // No mesh
           continue;
         }
-        //auto name = config.GetLine();
-        auto varEntry = varLookup.find(config.GetLine());
-        meshContext->VisibleVarIndex = varEntry == varLookup.end() ? -1 : (*varEntry).second;
+        meshContext->VisibleVarIndex = varLookup(config.GetLine());
         meshContext->VisibleCond = config.ReadFloat();
       }
       else if (config.TestTag("[viewpoint]")) {
@@ -153,6 +259,136 @@ namespace simp {
         }
         matlItemContext = &meshContext->Materials[index].Default;
       }
+      else if (config.TestTag("[matl_alpha]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        matlItemContext->AlphaMode = config.ReadInt();
+      }
+      else if (config.TestTag("[matl_texadress_clamp]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        matlItemContext->WrapMode = D3D11_TEXTURE_ADDRESS_CLAMP;
+      }
+      else if (config.TestTag("[matl_texadress_mirror]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        matlItemContext->WrapMode = D3D11_TEXTURE_ADDRESS_MIRROR;
+      }
+      else if (config.TestTag("[matl_texadress_mirroronce]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        matlItemContext->WrapMode = D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
+      }
+      else if (config.TestTag("[matl_nozcheck]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        matlItemContext->ZbufCheckDisable = true;
+      }
+      else if (config.TestTag("[matl_nozwrite]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        matlItemContext->ZbufWriteDisable = true;
+      }
+      else if (config.TestTag("[matl_texadress_border]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        matlItemContext->WrapMode = D3D11_TEXTURE_ADDRESS_BORDER;
+        config.ReadFloats((float*)&matlItemContext->BorderColor, 4);
+        matlItemContext->BorderColor /= 255.f;
+      }
+      else if (config.TestTag("[matl_envmap]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        auto name = config.GetLine();
+        auto intensity = config.ReadFloat();
+        if (name.empty()) {
+          // No filename given
+          continue;
+        }
+        matlItemContext->Textures[Material::Envmap] =
+          MaterialBlueprint::ParseTexture(name, texturePath);
+        matlItemContext->EnvMapIntensity = intensity;
+      }
+      else if (config.TestTag("[matl_bumpmap]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        auto name = config.GetLine();
+        auto intensity = config.ReadFloat();
+        if (name.empty()) {
+          // No filename given
+          continue;
+        }
+        matlItemContext->Textures[Material::Bumpmap] =
+          MaterialBlueprint::ParseTexture(name, texturePath);
+        matlItemContext->BumpMapIntensity = intensity;
+      }
+      else if (config.TestTag("[matl_envmap_mask]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        auto name = config.GetLine();
+        if (name.empty())
+          matlItemContext->Textures[Material::EnvmapMask] =
+          matlItemContext->Textures[Material::Diffuse];
+        else matlItemContext->Textures[Material::EnvmapMask] =
+          MaterialBlueprint::ParseTexture(name, texturePath);
+      }
+      else if (config.TestTag("[matl_transmap]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        auto name = config.GetLine();
+        if (name.empty())
+          matlItemContext->Textures[Material::Transmap] =
+          matlItemContext->Textures[Material::Diffuse];
+        else matlItemContext->Textures[Material::Transmap] =
+          MaterialBlueprint::ParseTexture(name, texturePath);
+      }
+      else if (config.TestTag("[matl_normalmap]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        auto name = config.GetLine();
+        if (name.empty()) {
+          // No filename given
+          continue;
+        }
+        else matlItemContext->Textures[Material::Normalmap] =
+          MaterialBlueprint::ParseTexture(name, texturePath);
+      }
+      else if (config.TestTag("[matl_allcolor]")) {
+        if (!matlItemContext) {
+          // No material
+          continue;
+        }
+        config.ReadFloats((float*)&matlItemContext->Diffuse, 3);
+        config.ReadFloats(&matlItemContext->Alpha, 1);
+        config.ReadFloats((float*)&matlItemContext->Ambient, 3);
+        config.ReadFloats((float*)&matlItemContext->Specular, 3);
+        config.ReadFloats((float*)&matlItemContext->Emissive, 3);
+        config.ReadFloats(&matlItemContext->Shininess, 1);
+      }
       else if (config.TestTag("[matl_change]")) {
         if (!meshContext) {
           // No mesh
@@ -172,8 +408,7 @@ namespace simp {
           continue;
         }
         materialContext = &meshContext->Materials[index];
-        auto varEntry = varLookup.find(config.GetLine());
-        materialContext->varIndex = varEntry == varLookup.end() ? -1 : (*varEntry).second;
+        materialContext->varIndex = varLookup(config.GetLine());
         matlItemContext = &materialContext->Default;
       }
       else if (config.TestTag("[matl_item]")) {
@@ -273,9 +508,8 @@ namespace simp {
           // Animation mode redefinition
           continue;
         }
-        auto varEntry = varLookup.find(config.GetLine());
+        animContext->varIndex = varLookup(config.GetLine());
         animContext->Mode = AnimBlueprint::Rot;
-        animContext->varIndex = varEntry == varLookup.end() ? -1 : (*varEntry).second;
         animContext->Factor = config.ReadFloat();
       }
       else if (config.TestTag("anim_trans")) {
@@ -287,9 +521,8 @@ namespace simp {
           // Animation mode redefinition
           continue;
         }
-        auto varEntry = varLookup.find(config.GetLine());
+        animContext->varIndex = varLookup(config.GetLine());
         animContext->Mode = AnimBlueprint::Trans;
-        animContext->varIndex = varEntry == varLookup.end() ? -1 : (*varEntry).second;
         animContext->Factor = config.ReadFloat();
       }
       else if (config.TestTag("[mesh_ident]")) {
@@ -322,5 +555,84 @@ namespace simp {
       }
     }
   }
+
+  MaterialBlueprint::TextureEntry MaterialBlueprint::ParseTexture(
+    const std::string_view& name,
+    const std::filesystem::path& lookupPath)
+  {
+    const static std::regex ttxRegex(R"__(^\\[Tt]\:(\d+)$)__", std::regex::ECMAScript);
+    const static std::regex stxRegex(R"__(^\\[Ss]\:(\d+)$)__", std::regex::ECMAScript);
+
+    std::cmatch sm;
+
+    if (std::regex_match(name.data(), name.data() + name.size(), sm, ttxRegex, std::regex_constants::match_continuous)) {
+      auto idx = sm[1].str();
+      return TextTexture{ std::stoi(idx) };
+    }
+    else if (std::regex_match(name.data(), name.data() + name.size(), sm, stxRegex, std::regex_constants::match_continuous)) {
+      auto idx = sm[1].str();
+      return ScriptTexture{ std::stoi(idx) };
+    }
+    else {
+      return Simp::GetTextureManager().Get(lookupPath / name);
+    }
+  }
+
+  void MaterialBlueprint::Instantiate(
+    Scene& scene,
+    entt::entity e, 
+    entt::entity controller, 
+    std::function<std::shared_ptr<Texture>(int)> getTextTexture, 
+    std::function<std::shared_ptr<Texture>(int)> getScriptTexture) const
+  {
+    auto& matl = scene.GetRegistry().emplace<MaterialComponent>(e);
+    matl.m_Material = Default.GetMaterial(controller, getTextTexture, getScriptTexture);
+    if (varIndex >= 0 && Items.size()) {
+      auto& matlChange = scene.GetRegistry().emplace<MaterialChangeComponent>(e);
+      matlChange.Default = matl.m_Material;
+      matlChange.Materials.reserve(Items.size());
+      for (const auto& item : Items) {
+        matlChange.Materials.emplace_back(
+          item.GetMaterial(controller, getTextTexture, getScriptTexture));
+      }
+    }
+  }
+
+
+  Material MaterialBlueprint::Item::GetMaterial(entt::entity controller, std::function<std::shared_ptr<Texture>(int)> getTextTexture, std::function<std::shared_ptr<Texture>(int)> getScriptTexture) const
+  {
+    Material material{};
+    for (int i = 0; i < Textures.size(); ++i) {
+      std::shared_ptr<Texture> texture;
+      if (std::holds_alternative<TextTexture>(Textures[i]))
+        texture = getScriptTexture(std::get<TextTexture>(Textures[i]).Index);
+      else if (std::holds_alternative<ScriptTexture>(Textures[i]))
+        texture = getScriptTexture(std::get<ScriptTexture>(Textures[i]).Index);
+      else
+        texture = std::get<std::shared_ptr<Texture>>(Textures[i]);
+      material.Textures[i] = texture ? texture->TextureView : nullptr;
+    }
+
+    material.Data.Diffuse = Diffuse;
+    material.Data.Alpha = Alpha;
+    material.Data.Specular = Specular;
+    material.Data.Shininess = Shininess;
+    material.Data.Emissive = Emissive;
+    material.Data.Ambient = Ambient;
+    material.Data.EnvMapIntensity = EnvMapIntensity;
+    material.Data.BumpMapIntensity = BumpMapIntensity;
+    material.Data.LightMapIntensity = LightMapIntensity;
+
+    material.BorderColor = BorderColor;
+    material.WrapMode = WrapMode;
+    material.AlphaMode = AlphaMode;
+
+    material.ZbufCheckDisable = ZbufCheckDisable;
+    material.ZbufWriteDisable = ZbufWriteDisable;
+
+    material.CreateResources();
+    return material;
+  }
+
 
 }

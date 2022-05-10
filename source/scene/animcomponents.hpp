@@ -16,7 +16,7 @@ namespace simp {
     glm::mat4 WorldMatrix;
     glm::mat4 InverseWorldMatrix;
     // TODO consider replacing with raw pointer
-    entt::entity ScriptObject;
+    entt::entity Controller;
     int VarIndex;
 
     float Factor;

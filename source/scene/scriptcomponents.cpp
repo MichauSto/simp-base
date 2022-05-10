@@ -1,17 +1,25 @@
 #include "scene.hpp"
 #include "scriptcomponents.hpp"
 #include "transformcomponents.hpp"
+#include "rendercomponents.hpp"
 
 namespace simp {
 
-    Scene::Scene()
+  void Scene::UpdateVisible()
+  {
+    // (1) Sync animations with script
     {
-      Registry.on_construct<TransformComponent>()
-        .connect<&Scene::OnTransformAdded>(this);
+      auto view = Registry.view<VisibleComponent>();
+      for (const auto& entity : view) {
+        auto [vis] = view.get<>(entity);
+        const auto& source = Registry.get<ScriptComponent>(vis.Controller);
+        vis.Visible = source.VarList[vis.VarIndex] == vis.Condition;
+      }
     }
+  }
 
-    void Scene::UpdateScripts(float dt) {
+  void Scene::UpdateScripts(float dt) {
     
-    }
+  }
 
 }

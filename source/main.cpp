@@ -8,15 +8,32 @@
 
 #include <filesystem/file.hpp>
 #include <filesystem/cfgfile.hpp>
-#include <blueprints/modelblueprint.hpp>
+#include <blueprints/vehicleblueprint.hpp>
 
 #include "simp.hpp"
+#include "visual/shaders.hpp"
 #include "core/event.hpp"
 #include "core/window.hpp"
 #include "core/winmsgtranslator.hpp"
 #include "filesystem/meshloader.hpp"
 
 #include "plugin/legacy.hpp"
+
+#include <glm/gtx/transform.hpp>
+
+#if 0
+#include "scene/rendercomponents.hpp"
+void bFlTest() {
+  using namespace simp;
+  auto positive = RenderOrderComponent::CalcDistanceUnsigned(1.f);
+  auto zero = RenderOrderComponent::CalcDistanceUnsigned(0.f);
+  auto negZero = RenderOrderComponent::CalcDistanceUnsigned(-0.f);
+  auto negative = RenderOrderComponent::CalcDistanceUnsigned(-1.f);
+  assert(zero == negZero);
+  assert(positive < zero);
+  assert(negative > zero);
+}
+#endif
 
 #ifdef _SIMP_WINAPP
 void parseArgs(LPWSTR cmdLine, std::function<int(const std::string*, int)> callback) {
@@ -86,17 +103,23 @@ int wmain(int argc, const wchar_t** argv)
   WinMsgTranslator translator{};
   Window window{};
   Simp simp{ settings };
-
+  Shaders shaders{};
   //Window::setFullscreen(true);
 
   PluginManagerLegacy mgr(settings.omsiDir);
+
+  VehicleBlueprint bp("Vehicles/MB_O307_V2/MB_O307_Annax.bus");
+  bp.Instantiate(simp.GetScene(), glm::translate(glm::vec3{ 6.f, 0.f, 0.f }));
+  bp.Instantiate(simp.GetScene(), glm::translate(glm::vec3{ 2.f, 0.f, 0.f }));
+  bp.Instantiate(simp.GetScene(), glm::translate(glm::vec3{ -2.f, 0.f, 0.f }));
+  bp.Instantiate(simp.GetScene(), glm::translate(glm::vec3{ -6.f, 0.f, 0.f }));
   
-  ModelBlueprint bp(
-    LoadFileText(settings.omsiDir / "Vehicles/MAN_SD200/Model/model_SD77.cfg"),
-    "Vehicles/MAN_SD200/Model", 
-    "Vehicles/MAN_SD200/Texture",
-    {},
-    {});
+  //ModelBlueprint bp(
+  //  LoadFileText(settings.omsiDir / "Vehicles/MAN_SD200/Model/model_SD77.cfg"),
+  //  "Vehicles/MAN_SD200/Model", 
+  //  "Vehicles/MAN_SD200/Texture",
+  //  {},
+  //  {});
 
   simp.Run();
 

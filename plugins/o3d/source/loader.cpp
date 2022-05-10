@@ -12,6 +12,17 @@ O3dLoader::O3dLoader(const char* omsiDir)
 
 }
 
+namespace {
+
+	glm::mat4 transformMatrix{
+		{ 1.f, 0.f, 0.f, 0.f },
+		{ 0.f, 0.f, 1.f, 0.f },
+		{ 0.f, 1.f, 0.f, 0.f },
+		{ 0.f, 0.f, 0.f, 1.f }
+	};
+
+}
+
 PMeshInstance O3dLoader::LoadMesh(uint64_t size, const char* data, const char* filename) const
 {
 	static const char magic[3] = { '\x84' , '\x19', '\x01' };
@@ -242,8 +253,8 @@ void O3dLoader::GetVertex(
   assert(mesh);
 
   const auto& vertex = mesh->Vertices[mesh->Models[materialId].Indices[triangleId * 3 + vertexId]];
-  *(glm::vec3*)position = vertex.Position;
-  *(glm::vec3*)normal = vertex.Normal;
+  *(glm::vec3*)position = transformMatrix * glm::vec4(vertex.Position, 1.f);
+  *(glm::vec3*)normal = transformMatrix * glm::vec4(vertex.Normal, 0.f);
   *(glm::vec2*)texCoord = vertex.TexCoord;
 }
 
@@ -284,6 +295,6 @@ void O3dLoader::GetOriginTransform(PMeshInstance instance, float matrix[]) const
   auto mesh = static_cast<Mesh*>(instance);
   assert(mesh);
 
-  *(glm::mat4*)matrix = mesh->Origin;
+  *(glm::mat4*)matrix = transformMatrix * mesh->Origin;
 }
 

@@ -1,6 +1,7 @@
 #include "mesh.hpp"
 #include "spatialsort/SpatialSort.hpp"
 #include "utils/dict.hpp"
+#include "simp.hpp"
 
 #include <mikktspace.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -117,6 +118,32 @@ namespace simp {
         return false;
         });
     }
+
+    D3D11_BUFFER_DESC vbDesc{};
+    vbDesc.ByteWidth = Vertices.size() * sizeof(Vertices[0]);
+    vbDesc.Usage = D3D11_USAGE_DEFAULT;
+    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    vbDesc.CPUAccessFlags = 0;
+    vbDesc.MiscFlags = 0;
+    vbDesc.StructureByteStride = 0;
+
+    D3D11_SUBRESOURCE_DATA vbData{};
+    vbData.pSysMem = Vertices.data();
+
+    Simp::GetGraphics().GetDevice()->CreateBuffer(&vbDesc, &vbData, &VertexBuffer);
+
+    D3D11_BUFFER_DESC ibDesc{};
+    ibDesc.ByteWidth = Indices.size() * sizeof(Indices[0]);
+    ibDesc.Usage = D3D11_USAGE_DEFAULT;
+    ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    ibDesc.CPUAccessFlags = 0;
+    ibDesc.MiscFlags = 0;
+    ibDesc.StructureByteStride = 0;
+
+    D3D11_SUBRESOURCE_DATA ibData{};
+    ibData.pSysMem = Indices.data();
+
+    Simp::GetGraphics().GetDevice()->CreateBuffer(&ibDesc, &ibData, &IndexBuffer);
   }
 
   const SubModel& Mesh::getModel(int index)

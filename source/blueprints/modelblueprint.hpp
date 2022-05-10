@@ -6,20 +6,58 @@
 #include "utils/dict.hpp"
 
 #include "scene/scene.hpp"
+#include "scene/materialcomponents.hpp"
 
+#include <variant>
 #include <memory>
 #include <vector>
 #include <filesystem>
 
 namespace simp {
 
+
+
   struct MaterialBlueprint {
+    struct TextTexture {
+      int Index;
+    };
+    struct ScriptTexture {
+      int Index;
+    };
+    using TextureEntry = std::variant<std::shared_ptr<Texture>, TextTexture, ScriptTexture>;
     struct Item {
-      std::shared_ptr<Texture> DiffuseTexture;
+      Material GetMaterial(
+        entt::entity controller,
+        std::function<std::shared_ptr<Texture>(int)> getTextTexture,
+        std::function<std::shared_ptr<Texture>(int)> getScriptTexture) const;
+      std::array<TextureEntry, Material::MapCount> Textures;
+      int AlphaMode;
+      bool ZbufCheckDisable;
+      bool ZbufWriteDisable;
+      D3D11_TEXTURE_ADDRESS_MODE WrapMode = D3D11_TEXTURE_ADDRESS_WRAP;
+      glm::vec4 BorderColor;
+      glm::vec3 Diffuse;
+      float Alpha;
+      glm::vec3 Specular;
+      float Shininess;
+      glm::vec3 Emissive;
+      glm::vec3 Ambient;
+      float EnvMapIntensity;
+      float BumpMapIntensity;
+      float LightMapIntensity;
     };
     Item Default{};
     std::vector<Item> Items{};
     int varIndex = -1;
+    static TextureEntry ParseTexture(
+      const std::string_view& name, 
+      const std::filesystem::path& lookupPath);
+    void Instantiate(
+      Scene& scene,
+      entt::entity e,
+      entt::entity controller,
+      std::function<std::shared_ptr<Texture>(int)> getTextTexture,
+      std::function<std::shared_ptr<Texture>(int)> getScriptTexture) const;
   };
 
   struct AnimBlueprint {
@@ -40,6 +78,7 @@ namespace simp {
 
   struct LodBlueprint {
     float MinSize = 0.f;
+    float MaxSize = std::numeric_limits<float>::max();
   };
 
   struct MeshBlueprint {
@@ -61,8 +100,11 @@ namespace simp {
       const CfgFile& config,
       const std::filesystem::path& meshPath,
       const std::filesystem::path& texturePath,
-      const Dict<int>& varLookup,
-      const Dict<int>& stringVarLookup);
+      const std::function<int(std::string_view)>& varLookup,
+      const std::function<int(std::string_view)>& stringVarLookup);
+
+    glm::vec3 m_BoundsMax;
+    glm::vec3 m_BoundsMin;
 
     std::vector<AnimBlueprint> Animations;
     std::vector<MeshBlueprint> Meshes;

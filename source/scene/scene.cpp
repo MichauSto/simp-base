@@ -1,6 +1,15 @@
 #include "scene.hpp"
+#include "transformcomponents.hpp"
+#include "rendercomponents.hpp"
+#include "simp.hpp"
 
 namespace simp {
+
+  Scene::Scene()
+  {
+    Registry.on_construct<TransformComponent>()
+      .connect<&Scene::OnTransformAdded>(this);
+  }
 
   void Scene::Update(float dt)
   {
@@ -18,9 +27,11 @@ namespace simp {
 
     UpdateTransforms();
 
-    // UpdateMaterials();
+    UpdateVisible();
 
-    // UpdateRenderers();
+    UpdateMaterials(Simp::GetGraphics().GetImmediateContext());
+
+    UpdateRenderers(Simp::GetGraphics().GetImmediateContext());
 
     ClearTransformFlags();
   }

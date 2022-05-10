@@ -23,8 +23,10 @@ namespace simp {
     const static MeshManager& GetMeshManager();
     const static TextureManager& GetTextureManager();
     const static Graphics& GetGraphics();
+    const static std::filesystem::path& GetOmsiPath();
     static Scene& GetScene();
   private:
+    std::filesystem::path OmsiPath;
     void OnClose(const WindowCloseEvent& e);
     bool Running = true;
     entt::dispatcher Dispatcher;

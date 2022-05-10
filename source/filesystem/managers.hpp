@@ -24,8 +24,10 @@ namespace simp {
     TextureManager(const std::filesystem::path& _omsiDir);
   private:
     std::filesystem::path OmsiDir;
+    mutable Dict<std::weak_ptr<Texture>> LocalCache;
     std::shared_ptr<Texture> LoadAsset(const std::filesystem::path& path) const override;
     std::shared_ptr<Texture> GetTextureLocal(const std::filesystem::path& path) const;
+    std::shared_ptr<Texture> LoadTextureLocal(const std::filesystem::path& path) const;
 
   };
 

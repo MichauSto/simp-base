@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utils/Windows.hpp"
+
 #include <glm/glm.hpp>
 #include <entt/entt.hpp>
 
@@ -12,9 +14,13 @@ namespace simp {
     void UpdateAnimations(float dt);
     void UpdateTransformHierarchy();
     void UpdateTransforms();
+    void UpdateRenderers(ID3D11DeviceContext* context);
+    void UpdateMaterials(ID3D11DeviceContext* context);
+    void UpdateVisible();
     void ClearTransformFlags();
     void UpdateReferenceTile();
     void Update(float dt);
+    void Render(ID3D11DeviceContext* context, const glm::mat4& viewMatrix);
     entt::registry& GetRegistry();
   private:
     entt::registry Registry;

@@ -12,6 +12,7 @@ namespace simp {
 
     ID3D11Device* GetDevice() const;
     ID3D11DeviceContext* GetDeviceContext() const;
+    ID3D11DeviceContext* GetImmediateContext() const;
     ID3D11RenderTargetView* GetRenderTargetView() const;
     ID3D11DepthStencilView* GetDepthStencilView() const;
     void Present();

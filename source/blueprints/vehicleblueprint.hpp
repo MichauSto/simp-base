@@ -8,12 +8,14 @@
 
 namespace simp {
 
-  struct VehicleBlueprint : public ModelBlueprint, public ScriptBlueprint
+  struct VehicleBlueprint
   {
     VehicleBlueprint() = default;
     VehicleBlueprint(const std::filesystem::path& path);
 
-    entt::entity Instantiate(Scene& scene) const;
+    ModelBlueprint ModelBlueprint;
+    ScriptBlueprint ScriptBlueprint;
+    entt::entity Instantiate(Scene& scene, const glm::mat4& position) const;
 
   };
 
