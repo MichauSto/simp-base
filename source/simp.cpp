@@ -123,7 +123,7 @@ namespace simp {
       context->VSSetConstantBuffers(0, 1, viewBuffer.GetAddressOf());
       context->OMSetDepthStencilState(dsState.Get(), 0);
       context->RSSetState(rsState.Get());
-      Scene.Render(context, view.viewProj);
+      Scene.Render(context, view.viewProj, view.eye);
 
       Graphics.Present();
     }

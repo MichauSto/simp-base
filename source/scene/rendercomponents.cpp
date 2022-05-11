@@ -10,21 +10,29 @@
 
 namespace simp {
 
-  void Scene::Render(ID3D11DeviceContext* context, const glm::mat4& viewMatrix)
+  void Scene::Render(ID3D11DeviceContext* context, const glm::mat4& viewMatrix, const glm::vec3& eye)
   {
     {
       auto view = Registry.view<TransformComponent, RenderBoxComponent>();
       for (auto e : view) {
         auto [transform, box] = view.get(e);
         glm::vec4 cs = viewMatrix * transform.WorldTransform * glm::vec4(0.f, 0.f, 0.f, 1.f);
+
+        {
+          auto inverseTransform = glm::inverse(transform.WorldTransform);
+          glm::vec3 eyeLocal = inverseTransform * glm::vec4(eye, 1.f);
+          auto pos = glm::max(glm::vec3{ 0.f }, glm::abs(eyeLocal - box.Size / 2.f));
+          box.Distance = glm::dot(pos, pos);
+        }
+
         if (cs.w)
         {
-          box.Distance = cs.z / cs.w;
+          //box.Distance = cs.z / cs.w;
           box.ScreenSize = 2.f * box.Radius / cs.w;
         }
         else
         {
-          box.Distance = 0.f;
+          //box.Distance = 0.f;
           box.ScreenSize = std::numeric_limits<float>::max();
         }
 

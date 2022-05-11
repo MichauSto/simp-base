@@ -20,7 +20,7 @@ namespace simp {
     void ClearTransformFlags();
     void UpdateReferenceTile();
     void Update(float dt);
-    void Render(ID3D11DeviceContext* context, const glm::mat4& viewMatrix);
+    void Render(ID3D11DeviceContext* context, const glm::mat4& viewMatrix, const glm::vec3& eye);
     entt::registry& GetRegistry();
   private:
     entt::registry Registry;
