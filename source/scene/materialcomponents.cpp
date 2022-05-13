@@ -87,6 +87,8 @@ namespace simp {
     msDesc.AddressW = WrapMode;
     msDesc.MipLODBias = 0.f;
     msDesc.MaxAnisotropy = 16;
+    msDesc.MinLOD = 0;
+    msDesc.MaxLOD = D3D11_FLOAT32_MAX;
     *reinterpret_cast<glm::vec4*>(msDesc.BorderColor) = BorderColor;
     
     Simp::GetGraphics().GetDevice()->CreateSamplerState(&msDesc, &Samplers[0]);

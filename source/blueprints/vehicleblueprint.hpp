@@ -1,21 +1,17 @@
 #pragma once
 
 #include "scene/scene.hpp"
-#include "modelblueprint.hpp"
-#include "scriptblueprint.hpp"
+#include "mapobjectblueprint.hpp"
 
 #include <filesystem>
 
 namespace simp {
 
-  struct VehicleBlueprint
+  struct VehicleBlueprint : public MapObjectBlueprint
   {
     VehicleBlueprint() = default;
     VehicleBlueprint(const std::filesystem::path& path);
-
-    ModelBlueprint ModelBlueprint;
-    ScriptBlueprint ScriptBlueprint;
-    entt::entity Instantiate(Scene& scene, const glm::mat4& position) const;
+    entt::entity Instantiate(Scene& scene, const glm::mat4& position, glm::ivec2 tile) const;
 
   };
 

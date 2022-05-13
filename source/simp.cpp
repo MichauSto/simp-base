@@ -34,12 +34,14 @@ namespace simp {
     Instance = nullptr;
   }
 
-  void Simp::Run()
+  void Simp::Run(glm::mat4 position, glm::ivec2 tile)
   {
     struct {
       alignas(16) glm::mat4 viewProj;
       alignas(16) glm::vec3 eye;
     } view;
+
+    Scene.SetReferenceTile(tile);
 
     ComPtr<ID3D11Buffer> viewBuffer{};
 
@@ -84,9 +86,10 @@ namespace simp {
       lon += .25f * dt;
       lon -= glm::floor(lon / glm::two_pi<float>()) * glm::two_pi<float>();
 
-      view.eye = glm::eulerAngleZ(lon) * glm::vec4(0.f, -15.f, 2.f, 1.f);
-
-      view.viewProj = glm::perspectiveFovRH_ZO(.785398f, (float)Window::getWidth(), (float)Window::getHeight(), .1f, 1000.f) * glm::lookAtRH(view.eye, glm::vec3{ 0.f, 0.f, 1.f }, glm::vec3{ 0.f, 0.f, 1.f });
+      view.eye = position * glm::eulerAngleZ(lon) * glm::vec4(0.f, -15.f, 2.f, 1.f);
+      glm::vec3 target = position * glm::vec4{ 0.f, 0.f, 1.f, 1.f };
+      
+      view.viewProj = glm::perspectiveFovRH_ZO(.785398f, (float)Window::getWidth(), (float)Window::getHeight(), .1f, 1000.f) * glm::lookAtRH(view.eye, target, glm::vec3{ 0.f, 0.f, 1.f });
 
 
 
@@ -139,6 +142,24 @@ namespace simp {
   {
     assert(Instance);
     return Instance->TextureManager;
+  }
+
+  const VehicleBlueprintManager& Simp::GetVehicleBlueprintManager()
+  {
+    assert(Instance);
+    return Instance->VehicleBlueprintManager;
+  }
+
+  const SceneryBlueprintManager& Simp::GetSceneryBlueprintManager()
+  {
+    assert(Instance);
+    return Instance->SceneryBlueprintManager;
+  }
+
+  const SplineBlueprintManager& Simp::GetSplineBlueprintManager()
+  {
+    assert(Instance);
+    return Instance->SplineBlueprintManager;
   }
 
   const Graphics& Simp::GetGraphics()

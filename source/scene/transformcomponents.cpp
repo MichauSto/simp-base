@@ -5,6 +5,15 @@
 
 namespace simp {
 
+  void Scene::SetReferenceTile(glm::ivec2 tile)
+  {
+    if (tile == ReferenceTile) return;
+    ReferenceTile = tile;
+    for (auto e : Registry.view<TransformWorldComponent>()) {
+      Registry.emplace_or_replace<TransformDirtyComponent>(e);
+    }
+  }
+
   void Scene::OnTransformAdded(entt::registry& registry, entt::entity entity)
   {
     TransformHierarchyChanged = true;
@@ -44,10 +53,11 @@ namespace simp {
 
     // Update top-level transforms
     {
-      auto view = Registry.view<TransformComponent, TransformWorldComponent>();
+      auto view = Registry.view<TransformComponent, TransformWorldComponent, TransformDirtyComponent>();
       for (const auto& entity : view) {
-        auto [transform, world] = view.get<>(entity);
-        transform.WorldTransform = transform.LocalTransform;
+        auto [transform, world, dirty] = view.get<>(entity);
+        transform.WorldTransform = 
+          glm::translate(300.f * glm::vec3(world.Tile - ReferenceTile, 0.f)) * transform.LocalTransform;
       }
     }
 
@@ -69,21 +79,6 @@ namespace simp {
   void Scene::ClearTransformFlags()
   {
     Registry.clear<TransformDirtyComponent>();
-  }
-
-  void Scene::UpdateReferenceTile() {
-    auto view = Registry.view<TransformComponent, TransformWorldComponent>();
-    for (const auto& entity : view) {
-      auto [transform, world] = view.get<>(entity);
-      transform.WorldTransform = 
-        glm::translate(
-          glm::vec3(
-            TileSize * (world.Tile - ReferenceTile), 
-            0.f)) * 
-        transform.LocalTransform;
-
-      Registry.emplace_or_replace<TransformDirtyComponent>(entity);
-    }
   }
 
 }

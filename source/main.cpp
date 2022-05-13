@@ -10,6 +10,8 @@
 #include <filesystem/cfgfile.hpp>
 #include <blueprints/vehicleblueprint.hpp>
 
+#include "scene/global.hpp"
+
 #include "simp.hpp"
 #include "visual/shaders.hpp"
 #include "core/event.hpp"
@@ -108,11 +110,17 @@ int wmain(int argc, const wchar_t** argv)
 
   PluginManagerLegacy mgr(settings.omsiDir);
 
-  VehicleBlueprint bp("Vehicles/MB_O307_V2/MB_O307_Annax.bus");
-  bp.Instantiate(simp.GetScene(), glm::translate(glm::vec3{ 6.f, 0.f, 0.f }));
-  bp.Instantiate(simp.GetScene(), glm::translate(glm::vec3{ 2.f, 0.f, 0.f }));
-  bp.Instantiate(simp.GetScene(), glm::translate(glm::vec3{ -2.f, 0.f, 0.f }));
-  bp.Instantiate(simp.GetScene(), glm::translate(glm::vec3{ -6.f, 0.f, 0.f }));
+  Global global("maps/London/global.cfg");
+
+  const auto& entryPoint = global.EntryPoints[2];
+  auto [tid, obj] = global.ObjectLookup[entryPoint.Object];
+
+  const auto& tile = global.Tiles[tid];
+  auto position = tile.Scenery[obj].Position;
+
+  VehicleBlueprint bp("Vehicles/MB_O407_93/MB_O407_neu.bus");
+  bp.Instantiate(simp.GetScene(), position, tile.Co);
+  global.Instantiate(simp.GetScene(), tile.Co, 4);
   
   //ModelBlueprint bp(
   //  LoadFileText(settings.omsiDir / "Vehicles/MAN_SD200/Model/model_SD77.cfg"),
@@ -121,7 +129,7 @@ int wmain(int argc, const wchar_t** argv)
   //  {},
   //  {});
 
-  simp.Run();
+  simp.Run(position, tile.Co);
 
   CoUninitialize();
   return 0;

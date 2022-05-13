@@ -7,5 +7,5 @@ struct VS_OUTPUT {
   float3 m_Tangent :      Tangent;
   float  m_Sign :         Sign;
   float2 m_TexCoord :     TexCoord;
-  float3 m_Eye :          Eye;
+  float3 m_View :         View;
 };

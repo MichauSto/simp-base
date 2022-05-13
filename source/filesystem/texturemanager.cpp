@@ -1,7 +1,7 @@
 #include "managers.hpp"
 #include "file.hpp"
-
-#include <DirectXTex.h>
+#include "utils/dict.hpp"
+#include "simp.hpp"
 
 namespace simp {
 
@@ -43,21 +43,20 @@ namespace simp {
     auto systemPath = OmsiDir / path;
     if (!std::filesystem::is_regular_file(systemPath)) return nullptr;
 
-    auto data = LoadFileBinary(systemPath);
-
-    if (path.extension() == ".tga") {
+    if (DictEqual(path.extension().generic_string(), ".tga")) {
       // Tga loader only
-      return Texture::LoadTGA(data);
+      return Texture::LoadTGA(Simp::GetOmsiPath() / path);
     }
 
-    if (path.extension() == ".dds") {
+    else if (DictEqual(path.extension().generic_string(), ".dds")) {
       // Try load dds
-      auto result = Texture::LoadDDS(data);
-      if (result) return result;
+      return Texture::LoadDDS(Simp::GetOmsiPath() / path);
     }
 
-    // Try WIC loader
-    return Texture::LoadWIC(data);
+    else {
+      // Try WIC loader
+      return Texture::LoadWIC(Simp::GetOmsiPath() / path);
+    }
   }
 
 }

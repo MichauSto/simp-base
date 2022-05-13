@@ -18,10 +18,13 @@ namespace simp {
   public:
     Simp(const LaunchSettings& settings);
     ~Simp();
-    void Run();
+    void Run(glm::mat4 position, glm::ivec2 tile);
   public:
     const static MeshManager& GetMeshManager();
     const static TextureManager& GetTextureManager();
+    const static VehicleBlueprintManager& GetVehicleBlueprintManager();
+    const static SceneryBlueprintManager& GetSceneryBlueprintManager();
+    const static SplineBlueprintManager& GetSplineBlueprintManager();
     const static Graphics& GetGraphics();
     const static std::filesystem::path& GetOmsiPath();
     static Scene& GetScene();
@@ -32,6 +35,9 @@ namespace simp {
     entt::dispatcher Dispatcher;
     MeshManager MeshManager;
     TextureManager TextureManager;
+    VehicleBlueprintManager VehicleBlueprintManager;
+    SceneryBlueprintManager SceneryBlueprintManager;
+    SplineBlueprintManager SplineBlueprintManager;
     Graphics Graphics;
     mutable Scene Scene;
   private:

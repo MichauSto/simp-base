@@ -105,6 +105,8 @@ namespace simp {
     envSamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     envSamplerDesc.MipLODBias = 0.f;
     envSamplerDesc.MaxAnisotropy = 16;
+    envSamplerDesc.MinLOD = 0;
+    envSamplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
     device->CreateSamplerState(&envSamplerDesc, &EnvMapSampler);
   }

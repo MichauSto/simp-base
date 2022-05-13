@@ -7,6 +7,9 @@
 #include <vector>
 #include <memory>
 
+#include <PxConfig.h>
+#include <PxPhysicsAPI.h>
+
 namespace simp {
 
   namespace MeshLoaderApi {
@@ -46,6 +49,7 @@ namespace simp {
       std::vector<std::string> _bones,
       std::vector<VertexWeights> _weights,
       const glm::mat4& _origin);
+    ~Mesh();
     std::vector<Vertex> Vertices;
     std::vector<uint16_t> Indices;
     std::vector<SubModel> Models;
@@ -54,6 +58,10 @@ namespace simp {
     glm::mat4 Origin;
     std::vector<std::string> Bones;
     std::vector<VertexWeights> Weights;
+    physx::PxConvexMesh* GetConvexMesh();
+    physx::PxTriangleMesh* GetTriangleMesh();
+    physx::PxConvexMesh* ConvexMesh = nullptr;
+    physx::PxTriangleMesh* TriangleMesh = nullptr;
     const SubModel& getModel(int index);
     int getModelCount() const;
     int getBoneIndex(const std::string_view& name) const;

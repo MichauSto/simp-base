@@ -1,4 +1,5 @@
 #include "output.cginc"
+#include "tonemap.cginc"
 
 SamplerState texSampler :     register(s0);
 SamplerState envSampler :     register(s1);
@@ -55,9 +56,6 @@ float3x3 getTBN(in VS_OUTPUT input) {
 
 float4 main(VS_OUTPUT input) : SV_Target0
 {
-  float4 DiffuseSample =      TexDiffuse.Sample(texSampler, input.m_TexCoord);
-  float3 Color =              DiffuseSample.rgb;
-
   bool HasDiffuse =           FeatureFlags & FEAT_DIFFUSE;
   bool HasEnvMap =            FeatureFlags & FEAT_ENVMAP;
   bool HasBumpMap =           FeatureFlags & FEAT_BUMPMAP;
@@ -70,6 +68,16 @@ float4 main(VS_OUTPUT input) : SV_Target0
   bool HasAlphaTest =         FeatureFlags & FEAT_ALPHATEST;
   bool HasAlphaBlend =        FeatureFlags & FEAT_ALPHABLEND;
 
+  float4 DiffuseSample;
+
+  if (HasDiffuse) {
+    DiffuseSample = TexDiffuse.Sample(texSampler, input.m_TexCoord);
+  }
+  else {
+    DiffuseSample = float4(1.0, 0.0, 1.0, 1.0);
+  }
+
+  float3 Color = SRGBToLinear(DiffuseSample.rgb);
   float Alpha;
 
   if (HasTransMap) {
@@ -88,17 +96,18 @@ float4 main(VS_OUTPUT input) : SV_Target0
   if (HasNormalMap) {
     float2 NormalSample = TexNormal.Sample(texSampler, input.m_TexCoord).rg;
     NormalSample = NormalSample * 2.0 - 1.0;
-    Normal = mul(getTBN(input), float3(NormalSample, sqrt(1.0 - dot(NormalSample, NormalSample))));
+    Normal = normalize(mul(float3(NormalSample, sqrt(1.0 - dot(NormalSample, NormalSample))), getTBN(input)));
   }
   else if (HasBumpMap) {
-    Normal = mul(getTBN(input), SampleNormalFromBumpmap(BumpMapIntensity, input.m_TexCoord, TexBumpmap, texSampler));
+    Normal = normalize(mul(SampleNormalFromBumpmap(BumpMapIntensity, input.m_TexCoord, TexBumpmap, texSampler), getTBN(input)));
   }
   else {
-    Normal = input.m_Normal;
+    Normal = normalize(input.m_Normal);
   }
 
-  float3 Reflect = reflect(normalize(input.m_Eye - input.m_PositionWS), Normal);
-  float3 Halfway = normalize(float3(0.0, 0.0, 1.0) + input.m_Eye - input.m_PositionWS);
+  float3 View = normalize(input.m_View);
+  float3 Reflect = reflect(View, Normal);
+  float3 Halfway = normalize(float3(0.0, 0.0, 1.0) + View);
 
   Color *= max(0.0, dot(Normal, float3(0.0, 0.0, 1.0))) * Diffuse + Ambient;
 
@@ -113,8 +122,10 @@ float4 main(VS_OUTPUT input) : SV_Target0
     Color =                   lerp(Color, Ambient * TexEnvMap.Sample(envSampler, Reflect.xz * float2(0.5, -0.5) + 0.5).rgb, EnvBlend);
   }
 
-  Color += pow(max(0.0, dot(Halfway, Normal)), Shininess) * Specular;
+  Color += pow(max(0.0, dot(Halfway, Normal)), max(Shininess * 4.0, 1e-5)) * Specular;
 
-  return float4(Color, Alpha);
+  // This is a very temporary solution. In the future we will store the view buffer in linear space
+  // and perform tonemapping / gamma correction in a separate pass afterwards.
+  return float4(LinearToSRGB(tonemap(Color)), Alpha);
 
 }

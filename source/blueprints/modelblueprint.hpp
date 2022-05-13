@@ -1,64 +1,17 @@
 #pragma once
 
 #include "visual/mesh.hpp"
-#include "visual/texture.hpp"
 #include "filesystem/cfgfile.hpp"
 #include "utils/dict.hpp"
+#include "materialblueprint.hpp"
 
 #include "scene/scene.hpp"
-#include "scene/materialcomponents.hpp"
 
-#include <variant>
 #include <memory>
 #include <vector>
 #include <filesystem>
 
 namespace simp {
-
-
-
-  struct MaterialBlueprint {
-    struct TextTexture {
-      int Index;
-    };
-    struct ScriptTexture {
-      int Index;
-    };
-    using TextureEntry = std::variant<std::shared_ptr<Texture>, TextTexture, ScriptTexture>;
-    struct Item {
-      Material GetMaterial(
-        entt::entity controller,
-        std::function<std::shared_ptr<Texture>(int)> getTextTexture,
-        std::function<std::shared_ptr<Texture>(int)> getScriptTexture) const;
-      std::array<TextureEntry, Material::MapCount> Textures;
-      int AlphaMode;
-      bool ZbufCheckDisable;
-      bool ZbufWriteDisable;
-      D3D11_TEXTURE_ADDRESS_MODE WrapMode = D3D11_TEXTURE_ADDRESS_WRAP;
-      glm::vec4 BorderColor;
-      glm::vec3 Diffuse;
-      float Alpha;
-      glm::vec3 Specular;
-      float Shininess;
-      glm::vec3 Emissive;
-      glm::vec3 Ambient;
-      float EnvMapIntensity;
-      float BumpMapIntensity;
-      float LightMapIntensity;
-    };
-    Item Default{};
-    std::vector<Item> Items{};
-    int varIndex = -1;
-    static TextureEntry ParseTexture(
-      const std::string_view& name, 
-      const std::filesystem::path& lookupPath);
-    void Instantiate(
-      Scene& scene,
-      entt::entity e,
-      entt::entity controller,
-      std::function<std::shared_ptr<Texture>(int)> getTextTexture,
-      std::function<std::shared_ptr<Texture>(int)> getScriptTexture) const;
-  };
 
   struct AnimBlueprint {
     enum struct AnimMode {
@@ -93,7 +46,7 @@ namespace simp {
 
   struct ModelBlueprint {
 
-    void Instantiate(Scene& scene, entt::entity mapObject, entt::entity scriptObject) const;
+    void Instantiate(Scene& scene, entt::entity mapObject, entt::entity scriptObject, int renderType) const;
 
     ModelBlueprint() = default;
     ModelBlueprint(

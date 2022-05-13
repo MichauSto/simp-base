@@ -4,6 +4,10 @@
 #include "visual/mesh.hpp"
 #include "visual/texture.hpp"
 
+#include "blueprints/sceneryblueprint.hpp"
+#include "blueprints/vehicleblueprint.hpp"
+#include "blueprints/splineblueprint.hpp"
+
 #include <memory>
 
 namespace simp {
@@ -28,7 +32,27 @@ namespace simp {
     std::shared_ptr<Texture> LoadAsset(const std::filesystem::path& path) const override;
     std::shared_ptr<Texture> GetTextureLocal(const std::filesystem::path& path) const;
     std::shared_ptr<Texture> LoadTextureLocal(const std::filesystem::path& path) const;
+  };
 
+  struct VehicleBlueprintManager : public AssetManager<VehicleBlueprint> {
+  public:
+    VehicleBlueprintManager() = default;
+  private:
+    std::shared_ptr<VehicleBlueprint> LoadAsset(const std::filesystem::path& path) const override;
+  };
+
+  struct SceneryBlueprintManager : public AssetManager<SceneryBlueprint> {
+  public:
+    SceneryBlueprintManager() = default;
+  private:
+    std::shared_ptr<SceneryBlueprint> LoadAsset(const std::filesystem::path& path) const override;
+  };
+
+  struct SplineBlueprintManager : public AssetManager<SplineBlueprint> {
+  public:
+    SplineBlueprintManager() = default;
+  private:
+    std::shared_ptr<SplineBlueprint> LoadAsset(const std::filesystem::path& path) const override;
   };
 
 }

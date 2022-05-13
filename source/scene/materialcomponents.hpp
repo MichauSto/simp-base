@@ -1,3 +1,5 @@
+#pragma once
+
 #include "scene.hpp"
 #include "visual/mesh.hpp"
 #include <bitset>

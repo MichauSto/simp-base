@@ -5,88 +5,90 @@
 #include "visual/shaders.hpp"
 #include "scene.hpp"
 #include "simp.hpp"
+#include "frustum.hpp"
 
+#include <execution>
 #include <map>
 
 namespace simp {
 
   void Scene::Render(ID3D11DeviceContext* context, const glm::mat4& viewMatrix, const glm::vec3& eye)
   {
+    Frustum frustum(viewMatrix);
+
     {
       auto view = Registry.view<TransformComponent, RenderBoxComponent>();
-      for (auto e : view) {
-        auto [transform, box] = view.get(e);
-        glm::vec4 cs = viewMatrix * transform.WorldTransform * glm::vec4(0.f, 0.f, 0.f, 1.f);
 
-        {
-          auto inverseTransform = glm::inverse(transform.WorldTransform);
-          glm::vec3 eyeLocal = inverseTransform * glm::vec4(eye, 1.f);
-          auto pos = glm::max(glm::vec3{ 0.f }, glm::abs(eyeLocal - box.Size / 2.f));
-          box.Distance = glm::dot(pos, pos);
-        }
+      std::for_each(std::execution::par_unseq, view.begin(), view.end(), [&](entt::entity e) -> void {
+          auto [transform, box] = view.get(e);
+          glm::vec4 cs = viewMatrix * transform.WorldTransform * glm::vec4(0.f, 0.f, 0.f, 1.f);
 
-        if (cs.w)
-        {
-          //box.Distance = cs.z / cs.w;
-          box.ScreenSize = 2.f * box.Radius / cs.w;
-        }
-        else
-        {
-          //box.Distance = 0.f;
-          box.ScreenSize = std::numeric_limits<float>::max();
-        }
+          {
+            auto inverseTransform = glm::inverse(transform.WorldTransform);
+            glm::vec3 eyeLocal = inverseTransform * glm::vec4(eye, 1.f);
+            auto pos = glm::max(glm::vec3{ 0.f }, glm::abs(eyeLocal - box.Size / 2.f));
+            box.Distance = glm::dot(pos, pos);
+          }
 
-      }
+          box.InFrustum = frustum.testBb(-box.Size, box.Size, transform.WorldTransform);
+
+          if (cs.w)
+          {
+            //box.Distance = cs.z / cs.w;
+            box.ScreenSize = 2.f * box.Radius / cs.w;
+          }
+          else
+          {
+            //box.Distance = 0.f;
+            box.ScreenSize = std::numeric_limits<float>::max();
+          }
+
+          box.ScreenSize = 1.f;
+
+        });
     }
 
     {
       auto view = Registry.view<RenderDistanceComponent, RenderOrderComponent>();
-      for (auto e : view) {
-        auto [dist, order] = view.get(e);
-        const auto& box = Registry.get<RenderBoxComponent>(dist.RefObject);
-        order.Parameters.Distance = RenderOrderComponent::CalcDistanceUnsigned(box.Distance);
-      }
-    }
-
-    Registry.clear<RenderFlagComponent>();
-
-    {
-      auto view = Registry.view<LodComponent>(entt::exclude<RenderFlagComponent>);
-      for (auto e : view) {
-        auto [lod] = view.get(e);
-        auto rb = Registry.get<RenderBoxComponent>(lod.RefObject);
-        if (lod.MaxSize < rb.ScreenSize || lod.MinSize >= rb.ScreenSize) {
-          Registry.emplace<RenderFlagComponent>(e);
-        }
-      }
+      std::for_each(std::execution::par_unseq, view.begin(), view.end(), [&](entt::entity e) -> void {
+          auto [dist, order] = view.get(e);
+          const auto& box = Registry.get<RenderBoxComponent>(dist.RefObject);
+          order.Parameters.Distance = RenderOrderComponent::CalcDistanceUnsigned(box.Distance);
+        });
     }
 
     {
-      auto view = Registry.view<VisibleComponent>(entt::exclude<RenderFlagComponent>);
-      for (auto e : view) {
-        auto [visible] = view.get(e);
-        if (!visible.Visible) {
-          Registry.emplace<RenderFlagComponent>(e);
-        }
-      }
+      auto view = Registry.view<RenderComponent, LodComponent>();
+      std::for_each(std::execution::par_unseq, view.begin(), view.end(), [&](entt::entity e) -> void {
+          auto [render, lod] = view.get(e);
+          auto rb = Registry.get<RenderBoxComponent>(lod.RefObject);
+          render.Render = rb.InFrustum && lod.MaxSize >= rb.ScreenSize && lod.MinSize < rb.ScreenSize;
+        });
     }
 
     {
-      auto view = Registry.view<ViewpointComponent>(entt::exclude<RenderFlagComponent>);
-      for (auto e : view) {
-        auto [vp] = view.get(e);
-        if (!((vp.Mask & 1))) {
-          Registry.emplace<RenderFlagComponent>(e);
-        }
-      }
+      auto view = Registry.view<RenderComponent, VisibleComponent>();
+      std::for_each(std::execution::par_unseq, view.begin(), view.end(), [&](entt::entity e) -> void {
+          auto [render, visible] = view.get(e);
+          render.Render = render.Render && visible.Visible;
+        });
     }
 
-    auto group = Registry.group<RenderComponent, RenderOrderComponent, MaterialComponent>(entt::exclude<RenderFlagComponent>);
+    {
+      auto view = Registry.view<RenderComponent, ViewpointComponent>();
+      std::for_each(std::execution::par_unseq, view.begin(), view.end(), [&](entt::entity e) -> void {
+          auto [render, vp] = view.get(e);
+          render.Render = render.Render && (vp.Mask & 1);
+        });
+    }
+
+    auto group = Registry.group<RenderComponent, RenderOrderComponent, MaterialComponent>();
 
     group.sort<RenderOrderComponent>([](const auto& lhs, const auto& rhs) -> bool { return lhs.Order < rhs.Order; });
 
     for (auto e : group) {
       auto [render, order, material] = group.get(e);
+      if (!render.Render) continue;
       assert(render.m_ModelBuffer);
       const auto& model = render.m_Mesh->Models[render.m_Index];
       context->VSSetShader(Shaders::GetVertexStatic(), nullptr, 0);

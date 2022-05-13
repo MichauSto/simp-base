@@ -146,6 +146,27 @@ namespace simp {
     Simp::GetGraphics().GetDevice()->CreateBuffer(&ibDesc, &ibData, &IndexBuffer);
   }
 
+  Mesh::~Mesh() {
+    if (TriangleMesh) TriangleMesh->release();
+    if (ConvexMesh) ConvexMesh->release();
+  }
+
+  physx::PxConvexMesh* Mesh::GetConvexMesh()
+  {
+    if (!ConvexMesh) {
+      ConvexMesh = Simp::GetScene().GetPhysicsWorld().createConvexMesh(this);
+    }
+    return ConvexMesh;
+  }
+
+  physx::PxTriangleMesh* Mesh::GetTriangleMesh()
+  {
+    if (!TriangleMesh) {
+      TriangleMesh = Simp::GetScene().GetPhysicsWorld().createMesh(this);
+    }
+    return TriangleMesh;
+  }
+
   const SubModel& Mesh::getModel(int index)
   {
     return Models[index];

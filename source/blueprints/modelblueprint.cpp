@@ -7,14 +7,14 @@
 
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
-#include <regex>
 
 namespace simp {
 
   void ModelBlueprint::Instantiate(
     Scene& scene, 
     entt::entity mapObject,
-    entt::entity scriptObject) const
+    entt::entity scriptObject, 
+    int renderType) const
   {
     // Create entities for each animation node
     std::vector<entt::entity> animNodes(Animations.size());
@@ -118,9 +118,10 @@ namespace simp {
           parent);
 
         // Render order component
-        scene.GetRegistry().emplace<RenderOrderComponent>(nodes[i], 4, 0.f, index++);
+        scene.GetRegistry().emplace<RenderOrderComponent>(nodes[i], renderType, 0.f, index++);
 
-        scene.GetRegistry().emplace<RenderDistanceComponent>(nodes[i], renderBox);
+        if(renderType >= 10)
+          scene.GetRegistry().emplace<RenderDistanceComponent>(nodes[i], renderBox);
 
         // Render component
         scene.GetRegistry().emplace<RenderComponent>(
@@ -259,136 +260,6 @@ namespace simp {
         }
         matlItemContext = &meshContext->Materials[index].Default;
       }
-      else if (config.TestTag("[matl_alpha]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        matlItemContext->AlphaMode = config.ReadInt();
-      }
-      else if (config.TestTag("[matl_texadress_clamp]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        matlItemContext->WrapMode = D3D11_TEXTURE_ADDRESS_CLAMP;
-      }
-      else if (config.TestTag("[matl_texadress_mirror]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        matlItemContext->WrapMode = D3D11_TEXTURE_ADDRESS_MIRROR;
-      }
-      else if (config.TestTag("[matl_texadress_mirroronce]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        matlItemContext->WrapMode = D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
-      }
-      else if (config.TestTag("[matl_nozcheck]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        matlItemContext->ZbufCheckDisable = true;
-      }
-      else if (config.TestTag("[matl_nozwrite]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        matlItemContext->ZbufWriteDisable = true;
-      }
-      else if (config.TestTag("[matl_texadress_border]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        matlItemContext->WrapMode = D3D11_TEXTURE_ADDRESS_BORDER;
-        config.ReadFloats((float*)&matlItemContext->BorderColor, 4);
-        matlItemContext->BorderColor /= 255.f;
-      }
-      else if (config.TestTag("[matl_envmap]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        auto name = config.GetLine();
-        auto intensity = config.ReadFloat();
-        if (name.empty()) {
-          // No filename given
-          continue;
-        }
-        matlItemContext->Textures[Material::Envmap] =
-          MaterialBlueprint::ParseTexture(name, texturePath);
-        matlItemContext->EnvMapIntensity = intensity;
-      }
-      else if (config.TestTag("[matl_bumpmap]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        auto name = config.GetLine();
-        auto intensity = config.ReadFloat();
-        if (name.empty()) {
-          // No filename given
-          continue;
-        }
-        matlItemContext->Textures[Material::Bumpmap] =
-          MaterialBlueprint::ParseTexture(name, texturePath);
-        matlItemContext->BumpMapIntensity = intensity;
-      }
-      else if (config.TestTag("[matl_envmap_mask]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        auto name = config.GetLine();
-        if (name.empty())
-          matlItemContext->Textures[Material::EnvmapMask] =
-          matlItemContext->Textures[Material::Diffuse];
-        else matlItemContext->Textures[Material::EnvmapMask] =
-          MaterialBlueprint::ParseTexture(name, texturePath);
-      }
-      else if (config.TestTag("[matl_transmap]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        auto name = config.GetLine();
-        if (name.empty())
-          matlItemContext->Textures[Material::Transmap] =
-          matlItemContext->Textures[Material::Diffuse];
-        else matlItemContext->Textures[Material::Transmap] =
-          MaterialBlueprint::ParseTexture(name, texturePath);
-      }
-      else if (config.TestTag("[matl_normalmap]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        auto name = config.GetLine();
-        if (name.empty()) {
-          // No filename given
-          continue;
-        }
-        else matlItemContext->Textures[Material::Normalmap] =
-          MaterialBlueprint::ParseTexture(name, texturePath);
-      }
-      else if (config.TestTag("[matl_allcolor]")) {
-        if (!matlItemContext) {
-          // No material
-          continue;
-        }
-        config.ReadFloats((float*)&matlItemContext->Diffuse, 3);
-        config.ReadFloats(&matlItemContext->Alpha, 1);
-        config.ReadFloats((float*)&matlItemContext->Ambient, 3);
-        config.ReadFloats((float*)&matlItemContext->Specular, 3);
-        config.ReadFloats((float*)&matlItemContext->Emissive, 3);
-        config.ReadFloats(&matlItemContext->Shininess, 1);
-      }
       else if (config.TestTag("[matl_change]")) {
         if (!meshContext) {
           // No mesh
@@ -417,6 +288,9 @@ namespace simp {
           continue;
         }
         matlItemContext = &materialContext->Items.emplace_back(materialContext->Default);
+      }
+      else if (matlItemContext && matlItemContext->ParseConfig(config, texturePath)) {
+        continue;
       }
       else if (config.TestTag("[newanim]")) {
         if (!meshContext) {
@@ -554,84 +428,6 @@ namespace simp {
         config.NextLine();
       }
     }
-  }
-
-  MaterialBlueprint::TextureEntry MaterialBlueprint::ParseTexture(
-    const std::string_view& name,
-    const std::filesystem::path& lookupPath)
-  {
-    const static std::regex ttxRegex(R"__(^\\[Tt]\:(\d+)$)__", std::regex::ECMAScript);
-    const static std::regex stxRegex(R"__(^\\[Ss]\:(\d+)$)__", std::regex::ECMAScript);
-
-    std::cmatch sm;
-
-    if (std::regex_match(name.data(), name.data() + name.size(), sm, ttxRegex, std::regex_constants::match_continuous)) {
-      auto idx = sm[1].str();
-      return TextTexture{ std::stoi(idx) };
-    }
-    else if (std::regex_match(name.data(), name.data() + name.size(), sm, stxRegex, std::regex_constants::match_continuous)) {
-      auto idx = sm[1].str();
-      return ScriptTexture{ std::stoi(idx) };
-    }
-    else {
-      return Simp::GetTextureManager().Get(lookupPath / name);
-    }
-  }
-
-  void MaterialBlueprint::Instantiate(
-    Scene& scene,
-    entt::entity e, 
-    entt::entity controller, 
-    std::function<std::shared_ptr<Texture>(int)> getTextTexture, 
-    std::function<std::shared_ptr<Texture>(int)> getScriptTexture) const
-  {
-    auto& matl = scene.GetRegistry().emplace<MaterialComponent>(e);
-    matl.m_Material = Default.GetMaterial(controller, getTextTexture, getScriptTexture);
-    if (varIndex >= 0 && Items.size()) {
-      auto& matlChange = scene.GetRegistry().emplace<MaterialChangeComponent>(e);
-      matlChange.Default = matl.m_Material;
-      matlChange.Materials.reserve(Items.size());
-      for (const auto& item : Items) {
-        matlChange.Materials.emplace_back(
-          item.GetMaterial(controller, getTextTexture, getScriptTexture));
-      }
-    }
-  }
-
-
-  Material MaterialBlueprint::Item::GetMaterial(entt::entity controller, std::function<std::shared_ptr<Texture>(int)> getTextTexture, std::function<std::shared_ptr<Texture>(int)> getScriptTexture) const
-  {
-    Material material{};
-    for (int i = 0; i < Textures.size(); ++i) {
-      std::shared_ptr<Texture> texture;
-      if (std::holds_alternative<TextTexture>(Textures[i]))
-        texture = getScriptTexture(std::get<TextTexture>(Textures[i]).Index);
-      else if (std::holds_alternative<ScriptTexture>(Textures[i]))
-        texture = getScriptTexture(std::get<ScriptTexture>(Textures[i]).Index);
-      else
-        texture = std::get<std::shared_ptr<Texture>>(Textures[i]);
-      material.Textures[i] = texture ? texture->TextureView : nullptr;
-    }
-
-    material.Data.Diffuse = Diffuse;
-    material.Data.Alpha = Alpha;
-    material.Data.Specular = Specular;
-    material.Data.Shininess = Shininess;
-    material.Data.Emissive = Emissive;
-    material.Data.Ambient = Ambient;
-    material.Data.EnvMapIntensity = EnvMapIntensity;
-    material.Data.BumpMapIntensity = BumpMapIntensity;
-    material.Data.LightMapIntensity = LightMapIntensity;
-
-    material.BorderColor = BorderColor;
-    material.WrapMode = WrapMode;
-    material.AlphaMode = AlphaMode;
-
-    material.ZbufCheckDisable = ZbufCheckDisable;
-    material.ZbufWriteDisable = ZbufWriteDisable;
-
-    material.CreateResources();
-    return material;
   }
 
 

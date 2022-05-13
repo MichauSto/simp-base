@@ -16,10 +16,6 @@ namespace simp {
     bool Visible;
   };
 
-  struct RenderFlagComponent {
-    bool Render = false;
-  };
-
   struct ViewpointComponent {
     int Mask = 0;
   };
@@ -40,6 +36,7 @@ namespace simp {
     float Radius;
     float ScreenSize;
     float Distance;
+    bool InFrustum;
   };
 
   struct RenderOrderComponent {
@@ -59,6 +56,7 @@ namespace simp {
   };
 
   struct RenderComponent {
+    bool Render;
     RenderComponent(
       const std::shared_ptr<Mesh>& _mesh, 
       int _index);

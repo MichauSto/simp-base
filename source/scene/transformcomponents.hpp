@@ -19,7 +19,7 @@ namespace simp {
   };
 
   struct TransformWorldComponent {
-    glm::vec2 Tile;
+    glm::ivec2 Tile;
   };
 
   struct TransformParentComponent {

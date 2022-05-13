@@ -16,3 +16,12 @@
 [submodule "plugins/aimesh/assimp"]
 	path = plugins/aimesh/assimp
 	url = git@github.com:assimp/assimp.git
+[submodule "dependencies/imgui"]
+	path = dependencies/imgui
+	url = git@github.com:ocornut/imgui.git
+[submodule "dependencies/freetype"]
+	path = dependencies/freetype
+	url = git@github.com:freetype/freetype.git
+[submodule "dependencies/PhysX"]
+	path = dependencies/PhysX
+	url = https://github.com/NVIDIAGameWorks/PhysX.git
